@@ -30,7 +30,7 @@ DATABASES = {
         'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'salmvbej_inventory',
-        'USER': 'salmvbej_user,
+        'USER': 'salmvbej_user',
         'PASSWORD': '_nNJnt+0JT5sO[Wb',
         'HOST': 'localhost',
         'PORT': '3306',
