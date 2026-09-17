@@ -8,7 +8,7 @@ import json
 import csv
 import random
 import decimal
-import xlsxwriter
+# import xlsxwriter
 import io
 import calendar
 from .reports import InventoryReports
