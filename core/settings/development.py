@@ -4,7 +4,7 @@ from decouple import config
 
 DEBUG = True
 
-ALLOWED_HOSTS = [salmancollections.com]
+ALLOWED_HOSTS = [www.salmancollections.com]
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-production-!@#$%^&*()')
 
