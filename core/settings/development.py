@@ -2,9 +2,15 @@ from .general import *
 from decouple import config
 
 
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['salmancollections.com']
+ALLOWED_HOSTS = [
+    "salmancollections.com",
+    "www.salmancollections.com",
+    "mail.salmancollections.com",
+    "127.0.0.1",
+    "localhost",
+]
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-production-!@#$%^&*()')
 
@@ -13,7 +19,7 @@ INTERNAL_IPS = [
 ]
 
 def show_toolbar(request):
-    return True
+    return False
 
 DEBUG_TOOLBAR_CONFIG = {
   "SHOW_TOOLBAR_CALLBACK" : show_toolbar,
