@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Receipt {{ sale.number }} · {{ shop.name }}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-md">
+  <div class="no-print mb-3 flex flex-wrap items-center justify-between gap-2">
+    <a href="{% url 'sales:detail' sale.pk %}" data-nav class="btn btn-secondary btn-sm">&larr; Sale details</a>
+    <div class="flex gap-2">
+      <button type="button" class="btn btn-primary btn-sm" data-print>Print receipt</button>
+      <a href="{% url 'sales:pos' %}" data-nav class="btn btn-secondary btn-sm">New sale</a>
+    </div>
+  </div>
+
+  <div class="card receipt p-6">
+    <div class="text-center">
+      {% if shop.logo and shop.receipt_show_logo %}
+        <img src="{{ shop.logo.url }}" alt="" class="mx-auto h-12 w-12 rounded-lg object-cover">
+      {% endif %}
+      <h1 class="mt-2 text-lg font-bold text-slate-900">{{ shop.name }}</h1>
+      {% if shop.receipt_header %}<p class="text-xs text-slate-500">{{ shop.receipt_header }}</p>{% endif %}
+      {% if shop.address %}<p class="mt-1 whitespace-pre-line text-[11px] text-slate-500">{{ shop.address }}</p>{% endif %}
+      {% if shop.phone %}<p class="text-[11px] text-slate-500">{{ shop.phone }}</p>{% endif %}
+      {% if shop.email %}<p class="text-[11px] text-slate-500">{{ shop.email }}</p>{% endif %}
+    </div>
+
+    <div class="my-3 border-y border-dashed border-slate-300 py-2 text-xs text-slate-600">
+      <div class="flex justify-between"><span>Receipt</span><span class="font-semibold text-slate-800">{{ sale.number }}</span></div>
+      <div class="flex justify-between"><span>Date</span><span>{{ sale.created_at|date:"j M Y H:i" }}</span></div>
+      <div class="flex justify-between"><span>Cashier</span><span>{{ sale.cashier.get_full_name|default:sale.cashier.username|default:"—" }}</span></div>
+      <div class="flex justify-between"><span>Customer</span><span>{{ sale.customer.name|default:"Walk-in" }}</span></div>
+    </div>
+
+    {% if sale.is_cancelled %}
+      <div class="mb-3 rounded-md border border-rose-300 bg-rose-50 px-2 py-1.5 text-center text-[11px] font-bold uppercase tracking-wide text-rose-700">
+        Cancelled {{ sale.cancelled_at|date:"j M Y H:i" }}
+      </div>
+    {% endif %}
+
+    <table class="w-full text-xs">
+      <thead>
+        <tr class="border-b border-slate-200 text-[10px] uppercase tracking-wide text-slate-500">
+          <th class="py-1 text-left">Item</th>
+          <th class="py-1 text-right">Qty</th>
+          <th class="py-1 text-right">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          <tr class="border-b border-slate-100 align-top">
+            <td class="py-1.5 pr-2">
+              <p class="font-medium text-slate-800">{{ item.description }}</p>
+              <p class="text-[10px] text-slate-400">{{ currency_symbol }}{{ item.unit_price|floatformat:2 }}{% if item.is_measurement or item.quantity <= 1000 and item.unit_price < 1 %} per unit{% endif %}</p>
+            </td>
+            <td class="py-1.5 text-right tabular-nums">{{ item.quantity|quantity }}{% if item.product %} {{ item.product.unit }}{% endif %}</td>
+            <td class="py-1.5 text-right tabular-nums">{{ currency_symbol }}{{ item.line_total|floatformat:2 }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <dl class="mt-3 space-y-1 border-t border-dashed border-slate-300 pt-2 text-xs">
+      <div class="flex justify-between"><dt class="text-slate-500">Subtotal</dt><dd class="tabular-nums">{{ currency_symbol }}{{ sale.subtotal|floatformat:2 }}</dd></div>
+      {% if sale.discount %}<div class="flex justify-between"><dt class="text-slate-500">Discount</dt><dd class="tabular-nums">-{{ currency_symbol }}{{ sale.discount|floatformat:2 }}</dd></div>{% endif %}
+      <div class="flex justify-between text-sm font-bold text-slate-900"><dt>Total</dt><dd class="tabular-nums">{{ currency_symbol }}{{ sale.total|floatformat:2 }}</dd></div>
+      <div class="flex justify-between"><dt class="text-slate-500">Paid</dt><dd class="tabular-nums">{{ currency_symbol }}{{ sale.paid|floatformat:2 }}</dd></div>
+      {% if sale.balance %}<div class="flex justify-between font-semibold text-rose-700"><dt>Balance due</dt><dd class="tabular-nums">{{ currency_symbol }}{{ sale.balance|floatformat:2 }}</dd></div>{% endif %}
+      {% if sale.change_given %}<div class="flex justify-between"><dt class="text-slate-500">Change</dt><dd class="tabular-nums">{{ currency_symbol }}{{ sale.change_given|floatformat:2 }}</dd></div>{% endif %}
+    </dl>
+
+    <div class="mt-2 border-t border-dashed border-slate-300 pt-2 text-[11px] text-slate-500">
+      <p class="font-semibold text-slate-600">Payment</p>
+      {% for payment in payments %}
+        <div class="flex justify-between"><span>{{ payment.method_name }}</span><span class="tabular-nums">{{ currency_symbol }}{{ payment.amount|floatformat:2 }}</span></div>
+      {% empty %}
+        <p>No payment recorded.</p>
+      {% endfor %}
+    </div>
+
+    {% if shop.receipt_footer %}
+      <p class="mt-4 border-t border-dashed border-slate-300 pt-3 text-center text-[11px] text-slate-500">{{ shop.receipt_footer }}</p>
+    {% endif %}
+    <p class="mt-1 text-center text-[10px] text-slate-400">Thank you · {{ sale.number }}</p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+    <p class="page-subtitle">{% block page_subtitle %}{% endblock %}</p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    {% block page_actions %}{% endblock %}
+    {% block form_toggle %}
+      <button type="button" class="btn btn-primary" data-form-open="{{ list_url }}">{% block form_toggle_label %}Add{% endblock %}</button>
+    {% endblock %}
+  </div>
+</div>
+<div class="workspace-grid{% if not editing %} is-panel-hidden{% endif %}" data-workspace-grid>
+  <section class="min-w-0" id="record-list" data-list-container data-list-url="{{ list_url }}">
+    {% block list %}{% endblock %}
+  </section>
+  <aside class="workspace-panel card card-pad h-fit {% if editing %}is-open{% else %}hidden{% endif %}" id="form-panel" data-form-panel>
+    {% block form %}{% endblock %}
+  </aside>
+</div>
+{% endblock %}

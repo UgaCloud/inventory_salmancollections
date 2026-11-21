@@ -1,0 +1,50 @@
+{% extends "core/workspace.html" %}
+{% load ui %}
+{% block title %}Stock adjustments · {{ shop.name }}{% endblock %}
+{% block page_title %}Stock adjustments{% endblock %}
+{% block page_subtitle %}Record an explicit correction with a reason. Every adjustment is auditable and updates the stock balance.{% endblock %}
+{% block page_actions %}<a href="{% url 'inventory:stock' %}" data-nav class="btn btn-secondary">Stock overview</a>{% endblock %}
+{% block form_toggle %}<button type="button" class="btn btn-primary" data-form-reveal>New adjustment</button>{% endblock %}
+{% block list %}
+<div class="card overflow-hidden">
+  <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+    <h2 class="section-title">Recent adjustments</h2>
+    <span class="badge badge-slate">Last 100</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>Date</th><th>Product</th><th class="num">Change</th><th class="num">Balance after</th><th>Reason</th><th>User</th></tr></thead>
+      <tbody>
+        {% for adjustment in history %}
+          <tr>
+            <td class="whitespace-nowrap text-xs text-slate-500">{{ adjustment.created_at|date:"j M Y H:i" }}</td>
+            <td>
+              <p class="font-medium text-slate-800">{{ adjustment.product.name }}</p>
+              <p class="text-xs text-slate-500">{{ adjustment.product.sku }}</p>
+            </td>
+            <td class="num {% if adjustment.quantity_delta < 0 %}text-rose-600{% else %}text-emerald-600{% endif %}">
+              {% if adjustment.quantity_delta > 0 %}+{% endif %}{{ adjustment.quantity_delta|quantity }} {{ adjustment.product.unit }}
+            </td>
+            <td class="num">{{ adjustment.balance_after|quantity }}</td>
+            <td class="text-xs">{{ adjustment.get_reason_display }}{% if adjustment.note %}<p class="text-slate-400">{{ adjustment.note }}</p>{% endif %}</td>
+            <td class="text-xs text-slate-500">{{ adjustment.user.username|default:"—" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="py-10 text-center text-sm text-slate-500">No stock adjustments have been recorded.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block form %}
+<div>
+  <h2 class="section-title mb-1">New adjustment</h2>
+  <p class="mb-3 text-xs text-slate-500">Removing more than the available stock is rejected.</p>
+  <form method="post" action="{{ list_url }}" data-ajax-form data-list-url="{{ list_url }}" novalidate>
+    {% csrf_token %}
+    {% include "partials/form_fields.html" %}
+    <button type="submit" class="btn btn-primary btn-block">Apply adjustment</button>
+  </form>
+</div>
+{% endblock %}

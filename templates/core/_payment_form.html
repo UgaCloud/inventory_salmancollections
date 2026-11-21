@@ -1,0 +1,14 @@
+{% if editing %}
+  <div class="mb-3 flex items-center justify-between">
+    <h2 class="section-title">Edit payment method</h2>
+    <button type="button" class="text-xs font-semibold text-brand-600 hover:underline" data-form-close>Add new</button>
+  </div>
+{% else %}
+  <h2 class="section-title mb-3">Add payment method</h2>
+{% endif %}
+<form method="post" action="{{ list_url }}" data-ajax-form data-list-url="{{ list_url }}" novalidate>
+  {% csrf_token %}
+  {% if editing %}<input type="hidden" name="id" value="{{ editing.pk }}">{% endif %}
+  {% include "partials/form_fields.html" %}
+  <button type="submit" class="btn btn-primary btn-block">Save payment method</button>
+</form>

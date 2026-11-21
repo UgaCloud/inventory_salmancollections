@@ -1,0 +1,8 @@
+{% extends "core/workspace.html" %}
+{% block title %}Customers · {{ shop.name }}{% endblock %}
+{% block page_title %}Customers{% endblock %}
+{% block page_subtitle %}Customer records, contact details and outstanding balances from credit sales.{% endblock %}
+{% block page_actions %}<a href="{% url 'customers:payments' %}" data-nav class="btn btn-secondary">Payment history</a>{% endblock %}
+{% block form_toggle_label %}Add customer{% endblock %}
+{% block list %}{% include "sales/_customer_list.html" %}{% endblock %}
+{% block form %}{% include "sales/_customer_form.html" %}{% endblock %}

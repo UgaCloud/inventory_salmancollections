@@ -1,0 +1,41 @@
+{% load ui %}
+<div class="card overflow-hidden">
+  <form method="get" action="{{ list_url }}" data-filter-form data-list-url="{{ list_url }}" class="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Search name, phone or email" class="min-w-[11rem] flex-1">
+    <select name="filter" class="w-48" aria-label="Customer filter">
+      <option value="">All customers</option>
+      <option value="outstanding" {% if filters.filter == "outstanding" %}selected{% endif %}>With outstanding balance</option>
+    </select>
+    <button type="submit" class="btn btn-secondary">Filter</button>
+  </form>
+  <div class="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
+    <h2 class="section-title">Customer records</h2>
+    <span class="badge badge-slate">{{ page.paginator.count }} customer{{ page.paginator.count|pluralize }}</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>Customer</th><th>Contact</th><th class="num">Purchases</th><th class="num">Outstanding</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for customer in customers %}
+          <tr>
+            <td>
+              <a href="{% url 'customers:detail' customer.pk %}" data-nav class="font-medium text-slate-800 hover:text-brand-600">{{ customer.name }}</a>
+              {% if customer.address %}<p class="max-w-[14rem] truncate text-xs text-slate-400">{{ customer.address }}</p>{% endif %}
+            </td>
+            <td class="text-xs text-slate-500">{{ customer.phone|default:"—" }}{% if customer.email %}<br>{{ customer.email }}{% endif %}</td>
+            <td class="num">{{ customer.sales.count }}</td>
+            <td class="num {% if customer.outstanding %}font-semibold text-rose-600{% endif %}">{{ customer.outstanding|money:currency_symbol }}</td>
+            <td>{% if customer.is_active %}<span class="badge badge-green">Active</span>{% else %}<span class="badge badge-slate">Inactive</span>{% endif %}</td>
+            <td class="whitespace-nowrap text-right">
+              <button type="button" class="btn btn-secondary btn-sm" data-form-open="{{ list_url }}?edit={{ customer.pk }}">Edit</button>
+              <a href="{% url 'customers:detail' customer.pk %}" data-nav class="btn btn-ghost btn-sm">Open</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="py-10 text-center text-sm text-slate-500">No customers match this view.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+</div>

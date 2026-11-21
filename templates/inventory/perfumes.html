@@ -1,0 +1,68 @@
+{% extends "core/workspace.html" %}
+{% load ui %}
+{% block title %}Perfumes · {{ shop.name }}{% endblock %}
+{% block page_title %}Perfumes{% endblock %}
+{% block page_subtitle %}Bulk perfume in millilitres, with preset selling sizes and independently stocked packed bottles.{% endblock %}
+{% block page_actions %}
+  <a href="{% url 'inventory:products' %}" data-nav class="btn btn-secondary">All products</a>
+  <a href="{% url 'inventory:pack' %}" data-nav class="btn btn-secondary">Pack from bulk</a>
+{% endblock %}
+{% block form_toggle_label %}Add perfume{% endblock %}
+{% block list %}
+<div class="card overflow-hidden">
+  <form method="get" action="{{ list_url }}" data-filter-form data-list-url="{{ list_url }}" class="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Search perfume, SKU or brand" class="min-w-[11rem] flex-1">
+    <select name="category" class="w-40" aria-label="Category">
+      <option value="">All categories</option>
+      {% for category in categories %}
+        <option value="{{ category.pk }}" {% if filters.category == category.pk|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+      {% endfor %}
+    </select>
+    <select name="status" class="w-36" aria-label="Stock status">
+      <option value="">Any status</option>
+      <option value="low" {% if filters.status == "low" %}selected{% endif %}>Low stock</option>
+      <option value="out" {% if filters.status == "out" %}selected{% endif %}>Out of stock</option>
+      <option value="inactive" {% if filters.status == "inactive" %}selected{% endif %}>Inactive</option>
+    </select>
+    <button type="submit" class="btn btn-secondary">Filter</button>
+  </form>
+  <div class="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
+    <h2 class="section-title">Bulk perfumes</h2>
+    <span class="badge badge-slate">{{ page.paginator.count }} perfume{{ page.paginator.count|pluralize }}</span>
+  </div>
+  <div class="divide-y divide-slate-100">
+    {% for product in products %}
+      <div class="flex flex-wrap items-center gap-3 px-4 py-3">
+        {% if product.image %}
+          <img src="{{ product.image.url }}" alt="" class="h-12 w-12 rounded-lg object-cover ring-1 ring-slate-200">
+        {% else %}
+          <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-brand-50 text-sm font-bold text-brand-500">{{ product.name|slice:":2"|upper }}</span>
+        {% endif %}
+        <div class="min-w-0 flex-1">
+          <a href="{% url 'inventory:perfume_detail' product.pk %}" data-nav class="truncate text-sm font-semibold text-slate-800 hover:text-brand-600">{{ product.name }}</a>
+          <p class="text-xs text-slate-500">
+            {{ product.brand|default:"No brand" }}{% if product.concentration %} · {{ product.concentration }}{% endif %} · {{ product.sku }}
+          </p>
+          <p class="mt-0.5 text-xs text-slate-500">
+            {{ product.stock_quantity|quantity }} ml in stock · {{ currency_symbol }}{{ product.unit_price|floatformat:2 }}/ml
+          </p>
+        </div>
+        <div class="flex flex-col items-end gap-1">
+          {% if product.is_out_of_stock %}<span class="badge badge-red">Out of stock</span>
+          {% elif product.is_low_stock %}<span class="badge badge-amber">Low stock</span>
+          {% else %}<span class="badge badge-green">{{ product.stock_quantity|quantity }} ml</span>{% endif %}
+          <span class="text-[11px] text-slate-400">{{ product.packed_products.count }} packed size{{ product.packed_products.count|pluralize }}</span>
+        </div>
+        <div class="flex gap-1">
+          <button type="button" class="btn btn-secondary btn-sm" data-form-open="{{ list_url }}?edit={{ product.pk }}">Edit</button>
+          <a href="{% url 'inventory:perfume_detail' product.pk %}" data-nav class="btn btn-ghost btn-sm">Details</a>
+        </div>
+      </div>
+    {% empty %}
+      <div class="px-4 py-10 text-center text-sm text-slate-500">No bulk perfumes yet. Add the first perfume with the form.</div>
+    {% endfor %}
+  </div>
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}
+{% block form %}{% include "inventory/_product_form.html" %}{% endblock %}

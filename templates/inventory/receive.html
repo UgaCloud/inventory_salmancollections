@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Receive stock · {{ shop.name }}{% endblock %}
+{% block content %}
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="page-title">Receive stock</h1>
+    <p class="page-subtitle">Record a purchase from a supplier. A batch, a stock movement and a cost record are created for every line.</p>
+  </div>
+  <a href="{% url 'inventory:purchases' %}" data-nav class="btn btn-secondary">Purchase history</a>
+</div>
+
+{% if line_errors %}
+  <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+    <ul class="list-disc space-y-1 pl-5">
+      {% for error in line_errors %}<li>{{ error }}</li>{% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+<form method="post" action="{% url 'inventory:receive' %}" data-ajax-form data-list-url="{{ list_url }}" id="receive-form" novalidate>
+  {% csrf_token %}
+  <div class="card card-pad">
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div data-field="supplier">
+        <label for="{{ form.supplier.id_for_label }}" class="label">Supplier <span class="text-rose-500">*</span></label>
+        {{ form.supplier }}
+        {% for error in form.supplier.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <div data-field="purchase_date">
+        <label for="{{ form.purchase_date.id_for_label }}" class="label">Purchase date <span class="text-rose-500">*</span></label>
+        {{ form.purchase_date }}
+        {% for error in form.purchase_date.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <div data-field="reference">
+        <label for="{{ form.reference.id_for_label }}" class="label">Supplier reference</label>
+        {{ form.reference }}
+        {% for error in form.reference.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <div data-field="note">
+        <label for="{{ form.note.id_for_label }}" class="label">Note</label>
+        {{ form.note }}
+        {% for error in form.note.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+    </div>
+    {% if form.non_field_errors %}
+      <div class="form-errors mt-3">
+        {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+      </div>
+    {% endif %}
+    <div class="form-errors mt-3 hidden" data-form-errors></div>
+  </div>
+
+  <div class="card mt-4 overflow-hidden">
+    <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+      <h2 class="section-title">Products received</h2>
+      <button type="button" class="btn btn-secondary btn-sm" id="add-purchase-line">Add product line</button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="table" id="purchase-lines">
+        <thead>
+          <tr><th class="min-w-[16rem]">Product</th><th class="w-28">Quantity</th><th class="w-32">Cost per unit</th><th class="w-40">Expiry date</th><th class="w-28 text-right">Line total</th><th></th></tr>
+        </thead>
+        <tbody data-purchase-lines>
+          {% include "inventory/_purchase_line.html" %}
+        </tbody>
+      </table>
+    </div>
+    <p class="border-t border-slate-100 px-4 py-2 text-[11px] text-slate-500">
+      For bulk perfumes enter millilitres. For packed bottles and boutique products enter pieces or bottles. Leave cost empty to use the product's current average cost.
+    </p>
+  </div>
+
+  <div class="mt-4 flex flex-wrap items-center justify-end gap-2">
+    <a href="{% url 'inventory:purchases' %}" data-nav class="btn btn-secondary">Cancel</a>
+    <button type="submit" class="btn btn-primary">Receive stock</button>
+  </div>
+</form>
+
+<div class="card mt-6 overflow-hidden">
+  <div class="border-b border-slate-100 px-4 py-3"><h2 class="section-title">Recently received</h2></div>
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>Purchase</th><th>Date</th><th>Supplier</th><th class="num">Cost</th></tr></thead>
+      <tbody>
+        {% for purchase in recent %}
+          <tr>
+            <td><a href="{% url 'inventory:purchase_detail' purchase.pk %}" data-nav class="font-medium text-brand-600 hover:underline">{{ purchase.number }}</a></td>
+            <td class="text-xs text-slate-500">{{ purchase.purchase_date|date:"j M Y" }}</td>
+            <td>{{ purchase.supplier.name|default:"—" }}</td>
+            <td class="num">{{ currency_symbol }}{{ purchase.total_cost|floatformat:2 }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="py-8 text-center text-sm text-slate-500">No purchases recorded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<template id="purchase-line-template">
+  {% include "inventory/_purchase_line.html" %}
+</template>
+{% endblock %}

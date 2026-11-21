@@ -1,0 +1,17 @@
+{% load ui %}
+<div class="mixture-row flex flex-wrap items-end gap-2" data-mixture-row>
+  <div class="min-w-[12rem] flex-1">
+    <label class="label">Perfume</label>
+    <select name="component_product" data-component-product>
+      <option value="">Choose a bulk perfume…</option>
+      {% for perfume in perfumes %}
+        <option value="{{ perfume.pk }}" data-cost="{{ perfume.average_cost }}">{{ perfume.name }} — {{ perfume.stock_quantity|quantity }}ml · {{ currency_symbol }}{{ perfume.average_cost|floatformat:4 }}/ml</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="w-28">
+    <label class="label">Millilitres</label>
+    <input type="number" name="component_ml" step="0.001" min="0" inputmode="decimal" placeholder="0" data-component-ml>
+  </div>
+  <button type="button" class="icon-btn mb-1.5" data-remove-component aria-label="Remove component">&times;</button>
+</div>

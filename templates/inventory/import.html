@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Bulk product import · {{ shop.name }}{% endblock %}
+{% block content %}
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="page-title">Bulk product import</h1>
+    <p class="page-subtitle">Create many products, perfumes and packed bottles from one CSV file.</p>
+  </div>
+  <a href="{% url 'inventory:import_template' %}" class="btn btn-secondary" download>Download CSV template</a>
+</div>
+
+<div class="grid gap-6 xl:grid-cols-3">
+  <div class="card card-pad">
+    <h2 class="section-title">Upload a file</h2>
+    <form method="post" enctype="multipart/form-data" class="mt-3" novalidate>
+      {% csrf_token %}
+      {% include "partials/form_fields.html" %}
+      <button type="submit" class="btn btn-primary btn-block">Validate and import</button>
+    </form>
+    <p class="mt-3 text-[11px] text-slate-500">The whole file is validated first. If any row has an error nothing is imported.</p>
+  </div>
+
+  <div class="card card-pad xl:col-span-2">
+    <h2 class="section-title">How the columns work</h2>
+    <div class="mt-3 overflow-x-auto">
+      <table class="table">
+        <thead><tr><th>Column</th><th>Required</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="font-medium">name</td><td>Yes</td><td>Product name.</td></tr>
+          <tr><td class="font-medium">sku</td><td>Yes</td><td>Unique product code.</td></tr>
+          <tr><td class="font-medium">barcode</td><td>No</td><td>Optional, must be unique.</td></tr>
+          <tr><td class="font-medium">category</td><td>No</td><td>Created automatically if it does not exist.</td></tr>
+          <tr><td class="font-medium">kind</td><td>No</td><td><code>standard</code>, <code>bulk_perfume</code> or <code>packed_perfume</code>.</td></tr>
+          <tr><td class="font-medium">unit</td><td>No</td><td><code>pcs</code>, <code>pair</code>, <code>ml</code> or <code>bottle</code>.</td></tr>
+          <tr><td class="font-medium">unit_price</td><td>Yes</td><td>Selling price per base unit.</td></tr>
+          <tr><td class="font-medium">opening_stock</td><td>No</td><td>Creates a real opening stock batch.</td></tr>
+          <tr><td class="font-medium">opening_cost</td><td>No</td><td>Cost per base unit for the opening batch.</td></tr>
+          <tr><td class="font-medium">preset_sizes</td><td>No</td><td>Bulk perfumes only, e.g. <code>5:7.00;10:12.00;30:32.00</code>.</td></tr>
+          <tr><td class="font-medium">bulk_parent_sku</td><td>No</td><td>For packed bottles: the SKU of their bulk perfume.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    {% if errors %}
+      <div class="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3">
+        <p class="text-sm font-semibold text-rose-700">Import errors</p>
+        <ul class="mt-1 list-disc space-y-1 pl-5 text-xs text-rose-700">
+          {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

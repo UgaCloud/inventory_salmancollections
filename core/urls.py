@@ -1,28 +1,18 @@
-# from django.contrib import admin
-# from django.urls import path, include
-# from debug_toolbar.toolbar import debug_toolbar_urls
+from django.urls import path
 
-# urlpatterns = [
-#     path('admin/', admin.site.urls),
-#     path('', include('app.urls')),
-#     path('api/', include('api.urls')),
-# ] + debug_toolbar_urls()
+from . import views
 
-from django.contrib import admin
-from django.urls import path, include
-from django.conf import settings
-from django.conf.urls.static import static
+app_name = "core"
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('app.urls')),
-    path('api/', include('api.urls')),
+    path("", views.dashboard, name="dashboard"),
+    path("accounts/login/", views.login_view, name="login"),
+    path("accounts/logout/", views.logout_view, name="logout"),
+    path("settings/", views.settings_business, name="settings"),
+    path("settings/payment-methods/", views.payment_methods, name="payment_methods"),
+    path("settings/users/", views.users, name="users"),
+    path("settings/roles/", views.roles, name="roles"),
+    path("settings/backups/", views.backups, name="backups"),
+    path("settings/backups/<int:pk>/download/", views.backup_download, name="backup_download"),
+    path("settings/audit/", views.audit_log, name="audit"),
 ]
-
-# Only enable Debug Toolbar locally when DEBUG is True
-if settings.DEBUG:
-    try:
-        from debug_toolbar.toolbar import debug_toolbar_urls
-        urlpatterns += debug_toolbar_urls()
-    except ImportError:
-        pass

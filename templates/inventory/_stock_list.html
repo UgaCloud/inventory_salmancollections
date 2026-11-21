@@ -1,0 +1,54 @@
+{% load ui %}
+<div class="card overflow-hidden">
+  <form method="get" action="{% url 'inventory:stock' %}" data-filter-form data-list-url="{% url 'inventory:stock' %}" class="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Search product, SKU or barcode" class="min-w-[11rem] flex-1">
+    <select name="kind" class="w-44" aria-label="Product type">
+      <option value="">All types</option>
+      {% for value, label in kind_choices %}
+        <option value="{{ value }}" {% if filters.kind == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="category" class="w-40" aria-label="Category">
+      <option value="">All categories</option>
+      {% for category in categories %}
+        <option value="{{ category.pk }}" {% if filters.category == category.pk|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+      {% endfor %}
+    </select>
+    <select name="status" class="w-36" aria-label="Stock status">
+      <option value="">Any status</option>
+      <option value="low" {% if filters.status == "low" %}selected{% endif %}>Low stock</option>
+      <option value="out" {% if filters.status == "out" %}selected{% endif %}>Out of stock</option>
+    </select>
+    <button type="submit" class="btn btn-secondary">Filter</button>
+  </form>
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead>
+        <tr><th>Product</th><th>Type</th><th class="num">On hand</th><th class="num">Reorder level</th><th class="num">Average cost</th><th class="num">Value</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        {% for product in products %}
+          <tr>
+            <td>
+              <p class="font-medium text-slate-800">{{ product.name }}</p>
+              <p class="text-xs text-slate-500">{{ product.sku }}{% if product.category %} · {{ product.category.name }}{% endif %}</p>
+            </td>
+            <td class="text-xs text-slate-500">{{ product.get_kind_display }}</td>
+            <td class="num font-medium">{{ product.stock_quantity|quantity }} <span class="text-xs font-normal text-slate-400">{{ product.unit }}</span></td>
+            <td class="num text-slate-500">{{ product.reorder_level|quantity }}</td>
+            <td class="num">{{ currency_symbol }}{{ product.average_cost|floatformat:"-4" }}</td>
+            <td class="num">{{ product.stock_value|money:currency_symbol }}</td>
+            <td>
+              {% if product.is_out_of_stock %}<span class="badge badge-red">Out</span>
+              {% elif product.is_low_stock %}<span class="badge badge-amber">Low</span>
+              {% else %}<span class="badge badge-green">OK</span>{% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="py-10 text-center text-sm text-slate-500">No products match this filter.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+</div>

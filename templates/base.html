@@ -1,0 +1,47 @@
+{% load static %}<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}{{ shop.name }}{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc',
+              400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca',
+              800: '#3730a3', 900: '#312e81'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=5">
+  <script>
+    window.APP_CONFIG = {
+      currency: "{{ shop.currency_symbol|escapejs }}",
+      catalogueUrl: "{% url 'sales:catalogue' %}",
+      checkoutUrl: "{% url 'sales:checkout' %}"
+    };
+  </script>
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-full bg-slate-50 text-slate-800 antialiased">
+  {% if user.is_authenticated %}{% include "partials/nav.html" %}{% endif %}
+  <div id="toast-root" class="pointer-events-none fixed right-4 top-20 z-[70] flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2" aria-live="polite"></div>
+  <div id="loading-bar" class="fixed left-0 top-0 z-[80] h-0.5 w-full bg-brand-600 opacity-0 transition-opacity duration-150"></div>
+  <main id="app-main" class="mx-auto w-full max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
+    {% include "partials/messages.html" %}
+    {% block content %}{% endblock %}
+  </main>
+  <script src="{% static 'js/app.js' %}?v=5"></script>
+  <script src="{% static 'js/pos.js' %}?v=5"></script>
+  <script src="{% static 'js/inventory.js' %}?v=5"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

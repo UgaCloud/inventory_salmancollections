@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Cash reconciliation · {{ shop.name }}{% endblock %}
+{% block content %}
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="page-title">Daily cash reconciliation</h1>
+    <p class="page-subtitle">Cash sales, customer cash payments, refunds and cash expenses for the day.</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <a href="{% url 'finance:expenses' %}" data-nav class="btn btn-secondary">Expenses</a>
+    <button type="button" class="btn btn-primary" data-form-reveal>Reconcile cash</button>
+  </div>
+</div>
+
+<form method="get" class="card mb-4 flex flex-wrap items-end gap-2 p-3">
+  <div class="w-48">
+    <label for="cash-date" class="label">Day</label>
+    <input type="date" id="cash-date" name="date" value="{{ day|date:'Y-m-d' }}">
+  </div>
+  <button type="submit" class="btn btn-secondary">Open day</button>
+</form>
+
+<div class="grid gap-6 xl:grid-cols-3">
+  <div class="card card-pad">
+    <p class="stat-label">Expected cash for {{ day|date:"j M Y" }}</p>
+    <p class="stat-value">{{ expected|money:currency_symbol }}</p>
+    <p class="mt-1 text-[11px] text-slate-500">Opening float plus cash received, less refunds and cash expenses.</p>
+
+    <div class="mt-4 hidden" id="form-panel" data-form-panel>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% include "partials/form_fields.html" %}
+        <button type="submit" class="btn btn-primary btn-block">Save reconciliation</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card xl:col-span-2 overflow-hidden">
+    <div class="border-b border-slate-100 px-4 py-3"><h2 class="section-title">Reconciliation history</h2></div>
+    <div class="overflow-x-auto">
+      <table class="table">
+        <thead><tr><th>Day</th><th class="num">Opening float</th><th class="num">Expected</th><th class="num">Counted</th><th class="num">Difference</th><th>Recorded by</th></tr></thead>
+        <tbody>
+          {% for record in history %}
+            <tr>
+              <td class="font-medium text-slate-800">{{ record.date|date:"j M Y" }}</td>
+              <td class="num">{{ record.opening_float|money:currency_symbol }}</td>
+              <td class="num">{{ record.expected_cash|money:currency_symbol }}</td>
+              <td class="num">{{ record.counted_cash|money:currency_symbol }}</td>
+              <td class="num {% if record.difference < 0 %}text-rose-600{% elif record.difference > 0 %}text-emerald-600{% endif %}">
+                {{ record.difference|money:currency_symbol }}
+              </td>
+              <td class="text-xs text-slate-500">{{ record.user.username|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="py-8 text-center text-sm text-slate-500">No reconciliations recorded yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

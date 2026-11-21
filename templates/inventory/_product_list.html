@@ -1,0 +1,93 @@
+{% load ui %}
+<div class="card overflow-hidden">
+  <form method="get" action="{{ list_url }}" data-filter-form data-list-url="{{ list_url }}" class="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Search name, SKU or barcode" class="min-w-[11rem] flex-1">
+    {% if not fixed_kind %}
+      <select name="kind" class="w-44" aria-label="Product type">
+        <option value="">All types</option>
+        {% for value, label in kind_choices %}
+          <option value="{{ value }}" {% if filters.kind == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    {% endif %}
+    <select name="category" class="w-40" aria-label="Category">
+      <option value="">All categories</option>
+      {% for category in categories %}
+        <option value="{{ category.pk }}" {% if filters.category == category.pk|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+      {% endfor %}
+    </select>
+    <select name="status" class="w-36" aria-label="Stock status">
+      <option value="">Any status</option>
+      <option value="low" {% if filters.status == "low" %}selected{% endif %}>Low stock</option>
+      <option value="out" {% if filters.status == "out" %}selected{% endif %}>Out of stock</option>
+      <option value="inactive" {% if filters.status == "inactive" %}selected{% endif %}>Inactive</option>
+    </select>
+    <button type="submit" class="btn btn-secondary">Filter</button>
+  </form>
+  <div class="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
+    <h2 class="section-title">{% if perfume_mode %}Perfumes{% else %}Product catalogue{% endif %}</h2>
+    <span class="badge badge-slate">{{ page.paginator.count }} record{{ page.paginator.count|pluralize }}</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Type</th>
+          <th class="num">Price</th>
+          <th class="num">Stock</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for product in products %}
+          <tr>
+            <td>
+              <div class="flex items-center gap-2.5">
+                {% if product.image %}
+                  <img src="{{ product.image.url }}" alt="" class="h-9 w-9 rounded-lg object-cover ring-1 ring-slate-200">
+                {% else %}
+                  <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500">{{ product.name|slice:":2"|upper }}</span>
+                {% endif %}
+                <div class="min-w-0">
+                  <p class="truncate font-medium text-slate-800">{{ product.name }}</p>
+                  <p class="text-xs text-slate-500">{{ product.sku }}{% if product.brand %} · {{ product.brand }}{% endif %}</p>
+                </div>
+              </div>
+            </td>
+            <td>
+              {% if product.kind == "bulk_perfume" %}<span class="badge badge-indigo">Bulk perfume</span>
+              {% elif product.kind == "packed_perfume" %}<span class="badge badge-blue">Packed bottle</span>
+              {% else %}<span class="badge badge-slate">Boutique</span>{% endif %}
+            </td>
+            <td class="num">
+              {{ currency_symbol }}{{ product.unit_price|floatformat:2 }}{% if product.unit == "ml" %}<span class="text-xs text-slate-400">/ml</span>{% endif %}
+              {% if product.kind == "bulk_perfume" and product.preset_sizes %}
+                <p class="text-[10px] text-slate-400">{{ product.preset_sizes|length }} preset size{{ product.preset_sizes|length|pluralize }}</p>
+              {% endif %}
+            </td>
+            <td class="num">
+              {{ product.stock_quantity|quantity }} <span class="text-xs text-slate-400">{{ product.unit }}</span>
+            </td>
+            <td>
+              {% if not product.is_active %}<span class="badge badge-slate">Inactive</span>
+              {% elif product.is_out_of_stock %}<span class="badge badge-red">Out of stock</span>
+              {% elif product.is_low_stock %}<span class="badge badge-amber">Low</span>
+              {% else %}<span class="badge badge-green">In stock</span>{% endif %}
+            </td>
+            <td class="whitespace-nowrap text-right">
+              <button type="button" class="btn btn-secondary btn-sm" data-form-open="{{ list_url }}?edit={{ product.pk }}">Edit</button>
+              {% if product.kind == "bulk_perfume" %}
+                <a href="{% url 'inventory:perfume_detail' product.pk %}" data-nav class="btn btn-ghost btn-sm">Open</a>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="py-10 text-center text-sm text-slate-500">No products match this view. Add a product using the form.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+</div>

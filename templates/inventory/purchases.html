@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Purchase history · {{ shop.name }}{% endblock %}
+{% block content %}
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="page-title">Purchase history</h1>
+    <p class="page-subtitle">Every stock receipt with its supplier, cost and batches.</p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'inventory:suppliers' %}" data-nav class="btn btn-secondary">Suppliers</a>
+    <a href="{% url 'inventory:receive' %}" data-nav class="btn btn-primary">Receive stock</a>
+  </div>
+</div>
+
+<form method="get" class="card mb-4 flex flex-wrap items-end gap-2 p-3">
+  <div class="min-w-[12rem] flex-1">
+    <label for="purchase-q" class="label">Search</label>
+    <input type="search" id="purchase-q" name="q" value="{{ filters.q }}" placeholder="Purchase number, reference or supplier">
+  </div>
+  <div class="w-48">
+    <label for="purchase-supplier" class="label">Supplier</label>
+    <select id="purchase-supplier" name="supplier">
+      <option value="">All suppliers</option>
+      {% for supplier in suppliers %}
+        <option value="{{ supplier.pk }}" {% if filters.supplier == supplier.pk|stringformat:"s" %}selected{% endif %}>{{ supplier.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="w-40">
+    <label for="purchase-start" class="label">From</label>
+    <input type="date" id="purchase-start" name="start" value="{{ filters.start }}">
+  </div>
+  <div class="w-40">
+    <label for="purchase-end" class="label">To</label>
+    <input type="date" id="purchase-end" name="end" value="{{ filters.end }}">
+  </div>
+  <button type="submit" class="btn btn-secondary">Filter</button>
+  <a href="{% url 'inventory:purchases' %}" data-nav class="btn btn-ghost">Reset</a>
+</form>
+
+<div class="card overflow-hidden">
+  <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+    <h2 class="section-title">Purchases</h2>
+    <span class="badge badge-slate">Page total {{ page_total|money:currency_symbol }}</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>Purchase</th><th>Date</th><th>Supplier</th><th class="num">Items</th><th class="num">Quantity</th><th class="num">Cost</th><th>Received by</th></tr></thead>
+      <tbody>
+        {% for purchase in purchases %}
+          <tr>
+            <td><a href="{% url 'inventory:purchase_detail' purchase.pk %}" data-nav class="font-semibold text-brand-600 hover:underline">{{ purchase.number }}</a>{% if purchase.reference %}<p class="text-xs text-slate-400">{{ purchase.reference }}</p>{% endif %}</td>
+            <td class="whitespace-nowrap text-slate-500">{{ purchase.purchase_date|date:"j M Y" }}</td>
+            <td>{{ purchase.supplier.name|default:"—" }}</td>
+            <td class="num">{{ purchase.lines.count }}</td>
+            <td class="num">{{ purchase.total_quantity|quantity }}</td>
+            <td class="num">{{ purchase.total_cost|money:currency_symbol }}</td>
+            <td class="text-xs text-slate-500">{{ purchase.user.username|default:"—" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="py-10 text-center text-sm text-slate-500">No purchases match this view.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

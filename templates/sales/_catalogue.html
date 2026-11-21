@@ -1,0 +1,42 @@
+{% load ui %}
+{% for product in products %}
+  <button type="button"
+          class="pos-card card overflow-hidden"
+          data-add-product
+          data-id="{{ product.pk }}"
+          data-name="{{ product.name }}"
+          data-kind="{{ product.kind }}"
+          data-unit="{{ product.unit }}"
+          data-price="{{ product.unit_price }}"
+          data-stock="{{ product.stock_quantity }}"
+          data-sku="{{ product.sku }}"
+          data-barcode="{{ product.barcode|default:'' }}"
+          data-presets="{{ product.preset_sizes|json_script_value }}"
+          {% if product.is_out_of_stock %}disabled aria-disabled="true"{% endif %}>
+    {% if product.image %}
+      <img src="{{ product.image.url }}" alt="" class="h-24 w-full object-cover" loading="lazy">
+    {% else %}
+      <div class="flex h-24 w-full items-center justify-center bg-gradient-to-br from-brand-50 to-slate-100 text-2xl font-bold text-brand-300">{{ product.name|slice:":2"|upper }}</div>
+    {% endif %}
+    <div class="p-3">
+      <p class="line-clamp-2 text-sm font-semibold leading-snug text-slate-800">{{ product.name }}</p>
+      <p class="mt-0.5 truncate text-[11px] text-slate-500">{{ product.get_kind_display }} · {{ product.sku }}</p>
+      <div class="mt-2 flex items-end justify-between gap-2">
+        <span class="text-sm font-bold text-slate-900">
+          {{ currency_symbol }}{{ product.unit_price|floatformat:2 }}{% if product.unit == "ml" %}<span class="text-[10px] font-medium text-slate-400">/ml</span>{% endif %}
+        </span>
+        {% if product.is_out_of_stock %}
+          <span class="badge badge-red">Out</span>
+        {% elif product.is_low_stock %}
+          <span class="badge badge-amber">{{ product.stock_quantity|quantity }} {{ product.unit }}</span>
+        {% else %}
+          <span class="badge badge-green">{{ product.stock_quantity|quantity }} {{ product.unit }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </button>
+{% empty %}
+  <div class="col-span-full rounded-xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">
+    No products match this search.
+  </div>
+{% endfor %}

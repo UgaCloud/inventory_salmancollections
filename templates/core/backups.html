@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Backup &amp; restore · {{ shop.name }}{% endblock %}
+{% block content %}
+<div class="mb-5">
+  <h1 class="page-title">Backup &amp; restore</h1>
+  <p class="page-subtitle">Protect the shop data. Backups are stored outside the application data and every restore keeps a safety copy.</p>
+</div>
+
+<div class="grid gap-6 xl:grid-cols-3">
+  <div class="card card-pad">
+    <h2 class="section-title">Create a backup now</h2>
+    <p class="mt-1 text-xs text-slate-500">Captures products, stock, purchases, sales, customers, finance and settings.</p>
+    <form method="post" class="mt-3">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create">
+      <label for="backup-note" class="label">Note (optional)</label>
+      <input type="text" id="backup-note" name="note" maxlength="200" placeholder="e.g. End of month">
+      <button type="submit" class="btn btn-primary btn-block mt-3">Create backup</button>
+    </form>
+    <div class="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">
+      <p><span class="font-semibold">Automatic backups:</span>
+        {% if shop.auto_backup_enabled %}<span class="badge badge-green">Enabled</span>{% else %}<span class="badge badge-slate">Off</span>{% endif %}
+      </p>
+      <form method="post" class="mt-2">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="toggle_auto">
+        <button type="submit" class="btn btn-secondary btn-sm">{% if shop.auto_backup_enabled %}Disable{% else %}Enable{% endif %} automatic backups</button>
+      </form>
+      <p class="mt-2">An automatic backup can be run with <code class="rounded bg-slate-100 px-1">python manage.py backup --auto</code> from cron or a scheduled task.</p>
+      <p class="mt-1">Retention: {{ shop.backup_retention }} manual and automatic backups are kept. Safety copies are always retained.</p>
+    </div>
+  </div>
+
+  <div class="card xl:col-span-2">
+    <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+      <h2 class="section-title">Backup history</h2>
+      <span class="badge badge-slate">{{ records|length }} files</span>
+    </div>
+    <div class="divide-y divide-slate-100">
+      {% for record in records %}
+        <div class="px-4 py-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="min-w-0">
+              <p class="truncate text-sm font-medium text-slate-800">{{ record.filename }}</p>
+              <p class="text-xs text-slate-500">
+                {{ record.created_at|date:"j M Y H:i" }} · {{ record.get_kind_display }} · {{ record.file_size|filesizeformat }} · {{ record.record_count }} records
+                {% if record.created_by %} · by {{ record.created_by.username }}{% endif %}
+              </p>
+              {% if record.note %}<p class="text-xs italic text-slate-400">{{ record.note }}</p>{% endif %}
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <a href="{% url 'core:backup_download' record.pk %}" class="btn btn-secondary btn-sm" download>Download</a>
+              <button type="button" class="btn btn-ghost btn-sm text-rose-600" data-delete data-id="{{ record.pk }}" data-url="{% url 'core:backups' %}" data-delete-label="the backup file">Delete</button>
+            </div>
+          </div>
+          <details class="mt-2">
+            <summary class="cursor-pointer text-xs font-semibold text-amber-700">Restore this backup</summary>
+            <div class="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <p class="text-xs text-amber-800">
+                Restoring replaces the current shop data with this backup. A safety backup is created first.
+                Type <strong>RESTORE</strong> to confirm.
+              </p>
+              <form method="post" class="mt-2 flex flex-wrap items-end gap-2">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="restore">
+                <input type="hidden" name="id" value="{{ record.pk }}">
+                <div class="min-w-[10rem] flex-1">
+                  <label for="confirm-{{ record.pk }}" class="label text-amber-900">Confirmation</label>
+                  <input type="text" id="confirm-{{ record.pk }}" name="confirm" placeholder="RESTORE" autocomplete="off">
+                </div>
+                <button type="submit" class="btn btn-danger">Restore backup</button>
+              </form>
+            </div>
+          </details>
+        </div>
+      {% empty %}
+        <div class="px-4 py-10 text-center text-sm text-slate-500">No backups have been created yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="mt-4 rounded-lg bg-slate-100 px-4 py-2 text-[11px] text-slate-500">
+  Backup storage directory: <code>{{ backup_root }}</code>. Files are protected by permissions and only downloadable by users with backup access.
+</div>
+{% endblock %}

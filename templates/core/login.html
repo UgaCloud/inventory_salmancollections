@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Sign in · {{ shop.name }}{% endblock %}
+{% block content %}
+<div class="mx-auto mt-10 max-w-md sm:mt-16">
+  <div class="mb-6 text-center">
+    {% if shop.logo %}
+      <img src="{{ shop.logo.url }}" alt="{{ shop.name }}" class="mx-auto h-14 w-14 rounded-xl object-cover ring-1 ring-slate-200">
+    {% else %}
+      <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-brand-600 text-xl font-bold text-white">{{ shop.name|slice:":1"|upper }}</span>
+    {% endif %}
+    <h1 class="mt-4 text-2xl font-bold text-slate-900">{{ shop.name }}</h1>
+    <p class="mt-1 text-sm text-slate-500">Sign in to manage the shop.</p>
+  </div>
+  <div class="card card-pad">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "partials/form_fields.html" %}
+      <input type="hidden" name="next" value="{{ request.GET.next }}">
+      <button type="submit" class="btn btn-primary btn-block mt-2">Sign in</button>
+    </form>
+  </div>
+  <p class="mt-4 text-center text-xs text-slate-400">Access is limited to the permissions your role has been given.</p>
+</div>
+{% endblock %}

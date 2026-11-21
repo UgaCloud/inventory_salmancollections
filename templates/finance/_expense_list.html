@@ -1,0 +1,45 @@
+{% load ui %}
+<div class="card overflow-hidden">
+  <form method="get" action="{{ list_url }}" data-filter-form data-list-url="{{ list_url }}" class="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Search description or reference" class="min-w-[10rem] flex-1">
+    <select name="category" class="w-40" aria-label="Category">
+      <option value="">All categories</option>
+      {% for category in categories %}
+        <option value="{{ category.pk }}" {% if filters.category == category.pk|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+      {% endfor %}
+    </select>
+    <input type="date" name="start" value="{{ filters.start }}" class="w-40" aria-label="From date">
+    <input type="date" name="end" value="{{ filters.end }}" class="w-40" aria-label="To date">
+    <button type="submit" class="btn btn-secondary">Filter</button>
+  </form>
+  <div class="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
+    <h2 class="section-title">Expenses</h2>
+    <span class="badge badge-slate">Total {{ period_total|money:currency_symbol }}</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Method</th><th class="num">Amount</th><th></th></tr></thead>
+      <tbody>
+        {% for expense in expenses %}
+          <tr>
+            <td class="whitespace-nowrap text-xs text-slate-500">{{ expense.date|date:"j M Y" }}</td>
+            <td>
+              <p class="font-medium text-slate-800">{{ expense.description }}</p>
+              {% if expense.reference %}<p class="text-xs text-slate-400">{{ expense.reference }}</p>{% endif %}
+            </td>
+            <td class="text-xs">{{ expense.category.name|default:"Uncategorised" }}</td>
+            <td class="text-xs">{{ expense.method_name|default:"—" }}</td>
+            <td class="num font-medium">{{ expense.amount|money:currency_symbol }}</td>
+            <td class="whitespace-nowrap text-right">
+              <button type="button" class="btn btn-secondary btn-sm" data-form-open="{{ list_url }}?edit={{ expense.pk }}">Edit</button>
+              <button type="button" class="btn btn-ghost btn-sm text-rose-600" data-delete data-id="{{ expense.pk }}" data-url="{{ list_url }}" data-delete-label="this expense">Delete</button>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="py-10 text-center text-sm text-slate-500">No expenses recorded for this view.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+</div>

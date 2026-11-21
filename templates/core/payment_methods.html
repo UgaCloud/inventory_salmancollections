@@ -1,0 +1,7 @@
+{% extends "core/workspace.html" %}
+{% block title %}Payment methods · {{ shop.name }}{% endblock %}
+{% block page_title %}Payment methods{% endblock %}
+{% block page_subtitle %}Ways the shop accepts money at the point of sale and for customer payments.{% endblock %}
+{% block form_toggle_label %}Add method{% endblock %}
+{% block list %}{% include "core/_payment_list.html" %}{% endblock %}
+{% block form %}{% include "core/_payment_form.html" %}{% endblock %}

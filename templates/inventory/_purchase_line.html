@@ -1,0 +1,15 @@
+<tr class="purchase-line">
+  <td>
+    <select name="product_id" aria-label="Product">
+      <option value="">Choose a product…</option>
+      {% for product in products %}
+        <option value="{{ product.pk }}">{{ product.name }} — {{ product.sku }} ({{ product.unit }})</option>
+      {% endfor %}
+    </select>
+  </td>
+  <td><input type="number" name="quantity" step="0.001" min="0" inputmode="decimal" placeholder="0" aria-label="Quantity"></td>
+  <td><input type="number" name="unit_cost" step="0.0001" min="0" inputmode="decimal" placeholder="Average cost" aria-label="Cost per unit"></td>
+  <td><input type="date" name="expiry_date" aria-label="Expiry date"></td>
+  <td class="num text-xs text-slate-500" data-line-amount>—</td>
+  <td class="text-right"><button type="button" class="icon-btn" data-remove-line aria-label="Remove line">&times;</button></td>
+</tr>

@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Sale {{ sale.number }} · {{ shop.name }}{% endblock %}
+{% block content %}
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="page-title">Sale {{ sale.number }}</h1>
+    <p class="page-subtitle">{{ sale.created_at|date:"j F Y H:i" }} · {{ sale.customer.name|default:"Walk-in customer" }} · cashier {{ sale.cashier.get_full_name|default:sale.cashier.username|default:"—" }}</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <a href="{% url 'sales:list' %}" data-nav class="btn btn-secondary">All sales</a>
+    <a href="{% url 'sales:receipt' sale.pk %}" target="_blank" class="btn btn-primary">Open receipt</a>
+  </div>
+</div>
+
+{% if sale.is_cancelled %}
+  <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+    <strong>Cancelled</strong> {{ sale.cancelled_at|date:"j M Y H:i" }} by {{ sale.cancelled_by.username|default:"—" }}.
+    {% if sale.cancel_reason %}Reason: {{ sale.cancel_reason }}.{% endif %}
+    Stock was restored and {{ sale.refunded_amount|money:currency_symbol }} recorded as refunded.
+  </div>
+{% endif %}
+
+<div class="grid gap-6 xl:grid-cols-3">
+  <div class="space-y-6 xl:col-span-2">
+    <div class="card overflow-hidden">
+      <div class="border-b border-slate-100 px-4 py-3"><h2 class="section-title">Items</h2></div>
+      <div class="overflow-x-auto">
+        <table class="table">
+          <thead><tr><th>Item</th><th class="num">Quantity</th><th class="num">Unit price</th><th class="num">Line total</th><th class="num">Cost</th></tr></thead>
+          <tbody>
+            {% for item in items %}
+              <tr>
+                <td>
+                  <p class="font-medium text-slate-800">{{ item.description }}</p>
+                  {% if item.mixture %}<span class="badge badge-indigo">Mixture</span>{% endif %}
+                  {% if item.product %}<p class="text-xs text-slate-500">{{ item.product.sku }} · {{ item.product.get_unit_display }}</p>{% endif %}
+                </td>
+                <td class="num">{{ item.quantity|quantity }}{% if item.product %} {{ item.product.unit }}{% endif %}</td>
+                <td class="num">{{ currency_symbol }}{{ item.unit_price|floatformat:2 }}</td>
+                <td class="num">{{ item.line_total|money:currency_symbol }}</td>
+                <td class="num text-slate-500">{{ item.cogs|money:currency_symbol }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <dl class="space-y-1 border-t border-slate-100 px-4 py-3 text-sm">
+        <div class="flex justify-between"><dt class="text-slate-500">Subtotal</dt><dd class="tabular-nums">{{ sale.subtotal|money:currency_symbol }}</dd></div>
+        {% if sale.discount %}<div class="flex justify-between"><dt class="text-slate-500">Discount</dt><dd class="tabular-nums">-{{ sale.discount|money:currency_symbol }}</dd></div>{% endif %}
+        <div class="flex justify-between text-base font-bold"><dt>Total</dt><dd class="tabular-nums">{{ sale.total|money:currency_symbol }}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Cost of goods sold</dt><dd class="tabular-nums">{{ sale.cogs|money:currency_symbol }}</dd></div>
+        <div class="flex justify-between font-medium text-emerald-700"><dt>Gross profit</dt><dd class="tabular-nums">{{ sale.gross_profit|money:currency_symbol }}</dd></div>
+      </dl>
+    </div>
+
+    {% if sale.status == "completed" and "sales.cancel" in perms %}
+      <div class="card card-pad border-rose-200">
+        <h2 class="section-title text-rose-700">Cancel this sale</h2>
+        <p class="mt-1 text-xs text-slate-600">
+          Cancelling restores the exact stock quantities that were deducted, reverses a sold mixture back to prepared,
+          and records a refund of {{ sale.paid|money:currency_symbol }}. Sales are never deleted.
+        </p>
+        <form method="post" action="{% url 'sales:cancel' sale.pk %}" class="mt-3 flex flex-wrap items-end gap-2" onsubmit="return confirm('Cancel this sale and restore stock?');">
+          {% csrf_token %}
+          <div class="min-w-[14rem] flex-1">
+            <label for="cancel-reason" class="label">Reason</label>
+            <input type="text" id="cancel-reason" name="reason" required maxlength="200" placeholder="Why is this sale being cancelled?">
+          </div>
+          <button type="submit" class="btn btn-danger">Cancel sale &amp; refund</button>
+        </form>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="space-y-6">
+    <div class="card card-pad">
+      <h2 class="section-title">Payments</h2>
+      <ul class="mt-2 divide-y divide-slate-100">
+        {% for payment in payments %}
+          <li class="flex items-center justify-between py-2 text-sm">
+            <span class="text-slate-600">{{ payment.method_name }}</span>
+            <span class="font-medium tabular-nums">{{ payment.amount|money:currency_symbol }}</span>
+          </li>
+        {% empty %}
+          <li class="py-2 text-sm text-slate-500">No payments recorded.</li>
+        {% endfor %}
+      </ul>
+      <dl class="mt-3 space-y-1 border-t border-slate-100 pt-3 text-sm">
+        <div class="flex justify-between"><dt class="text-slate-500">Paid</dt><dd class="tabular-nums">{{ sale.paid|money:currency_symbol }}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Balance</dt><dd class="tabular-nums">{{ sale.balance|money:currency_symbol }}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Change given</dt><dd class="tabular-nums">{{ sale.change_given|money:currency_symbol }}</dd></div>
+      </dl>
+    </div>
+
+    {% if refunds %}
+      <div class="card card-pad">
+        <h2 class="section-title">Refunds</h2>
+        <ul class="mt-2 divide-y divide-slate-100">
+          {% for refund in refunds %}
+            <li class="py-2 text-sm">
+              <div class="flex justify-between"><span class="text-slate-600">{{ refund.created_at|date:"j M Y H:i" }}</span><span class="font-medium tabular-nums">{{ refund.amount|money:currency_symbol }}</span></div>
+              {% if refund.reason %}<p class="text-xs text-slate-500">{{ refund.reason }}</p>{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    {% if sale.note %}
+      <div class="card card-pad">
+        <h2 class="section-title">Note</h2>
+        <p class="mt-2 text-sm text-slate-600">{{ sale.note }}</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

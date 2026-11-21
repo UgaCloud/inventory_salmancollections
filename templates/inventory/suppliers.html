@@ -1,0 +1,8 @@
+{% extends "core/workspace.html" %}
+{% block title %}Suppliers · {{ shop.name }}{% endblock %}
+{% block page_title %}Suppliers{% endblock %}
+{% block page_subtitle %}Who the shop buys stock from. Suppliers are referenced by every stock receipt.{% endblock %}
+{% block page_actions %}<a href="{% url 'inventory:receive' %}" data-nav class="btn btn-primary">Receive stock</a>{% endblock %}
+{% block form_toggle_label %}Add supplier{% endblock %}
+{% block list %}{% include "inventory/_supplier_list.html" %}{% endblock %}
+{% block form %}{% include "inventory/_supplier_form.html" %}{% endblock %}

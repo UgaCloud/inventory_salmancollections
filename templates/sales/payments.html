@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Customer payments · {{ shop.name }}{% endblock %}
+{% block content %}
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="page-title">Payment history</h1>
+    <p class="page-subtitle">Payments received against outstanding customer balances.</p>
+  </div>
+  <a href="{% url 'customers:customers' %}" data-nav class="btn btn-secondary">Customers</a>
+</div>
+
+<form method="get" class="card mb-4 flex flex-wrap items-end gap-2 p-3">
+  <div class="min-w-[12rem] flex-1">
+    <label for="payments-q" class="label">Search</label>
+    <input type="search" id="payments-q" name="q" value="{{ q }}" placeholder="Customer name or payment reference">
+  </div>
+  <button type="submit" class="btn btn-secondary">Search</button>
+  <a href="{% url 'customers:payments' %}" data-nav class="btn btn-ghost">Reset</a>
+</form>
+
+<div class="card overflow-hidden">
+  <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+    <h2 class="section-title">Payments</h2>
+    <span class="badge badge-slate">Page total {{ page_total|money:currency_symbol }}</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>Date</th><th>Customer</th><th>Receipt</th><th>Method</th><th class="num">Amount</th><th>Recorded by</th><th>Note</th></tr></thead>
+      <tbody>
+        {% for payment in payments %}
+          <tr>
+            <td class="whitespace-nowrap text-xs text-slate-500">{{ payment.date|date:"j M Y" }}</td>
+            <td><a href="{% url 'customers:detail' payment.customer.pk %}" data-nav class="font-medium text-slate-800 hover:text-brand-600">{{ payment.customer.name }}</a></td>
+            <td class="text-xs">{% if payment.sale %}<a href="{% url 'sales:detail' payment.sale.pk %}" data-nav class="text-brand-600 hover:underline">{{ payment.sale.number }}</a>{% else %}—{% endif %}</td>
+            <td class="text-xs">{{ payment.method_name|default:"—" }}</td>
+            <td class="num">{{ payment.amount|money:currency_symbol }}</td>
+            <td class="text-xs text-slate-500">{{ payment.user.username|default:"—" }}</td>
+            <td class="max-w-[12rem] truncate text-xs text-slate-400">{{ payment.note|default:"—" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="py-10 text-center text-sm text-slate-500">No customer payments recorded.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

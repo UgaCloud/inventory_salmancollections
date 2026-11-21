@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Stock overview · {{ shop.name }}{% endblock %}
+{% block content %}
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="page-title">Stock overview</h1>
+    <p class="page-subtitle">One authoritative balance per product, in its base unit.</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {% if "stock.adjust" in perms %}<a href="{% url 'inventory:adjustments' %}" data-nav class="btn btn-secondary">Adjust stock</a>{% endif %}
+    {% if "purchases.manage" in perms %}<a href="{% url 'inventory:receive' %}" data-nav class="btn btn-primary">Receive stock</a>{% endif %}
+  </div>
+</div>
+
+<div class="mb-4 grid gap-4 sm:grid-cols-3">
+  <div class="card card-pad"><p class="stat-label">Stock value on this page</p><p class="stat-value">{{ total_value|money:currency_symbol }}</p></div>
+  <div class="card card-pad"><p class="stat-label">Low stock</p><p class="stat-value">{{ low_count }}</p></div>
+  <div class="card card-pad"><p class="stat-label">Out of stock</p><p class="stat-value">{{ out_count }}</p></div>
+</div>
+
+<div data-list-container data-list-url="{% url 'inventory:stock' %}">
+  {% include "inventory/_stock_list.html" %}
+</div>
+{% endblock %}

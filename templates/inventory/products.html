@@ -1,0 +1,11 @@
+{% extends "core/workspace.html" %}
+{% block title %}Products · {{ shop.name }}{% endblock %}
+{% block page_title %}Products{% endblock %}
+{% block page_subtitle %}One catalogue for boutique items, bulk perfumes and pre-packed bottles.{% endblock %}
+{% block page_actions %}
+  <a href="{% url 'inventory:perfumes' %}" data-nav class="btn btn-secondary">Perfume workspace</a>
+  <a href="{% url 'inventory:stock' %}" data-nav class="btn btn-secondary">Stock overview</a>
+{% endblock %}
+{% block form_toggle_label %}Add product{% endblock %}
+{% block list %}{% include "inventory/_product_list.html" %}{% endblock %}
+{% block form %}{% include "inventory/_product_form.html" %}{% endblock %}

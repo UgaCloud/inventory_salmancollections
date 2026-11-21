@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Business settings · {{ shop.name }}{% endblock %}
+{% block content %}
+<div class="mb-5">
+  <h1 class="page-title">Business information</h1>
+  <p class="page-subtitle">Shop identity, receipt appearance, currency and payment behaviour.</p>
+</div>
+<div class="grid gap-6 xl:grid-cols-3">
+  <div class="card card-pad xl:col-span-2">
+    <form method="post" enctype="multipart/form-data" action="{% url 'core:settings' %}" data-ajax-form data-list-url="{% url 'core:settings' %}" novalidate>
+      {% csrf_token %}
+      {% include "partials/form_fields.html" %}
+      <button type="submit" class="btn btn-primary">Save settings</button>
+    </form>
+  </div>
+  <div class="space-y-6">
+    <div class="card card-pad">
+      <h2 class="section-title">Current logo</h2>
+      {% if shop.logo %}
+        <img src="{{ shop.logo.url }}" alt="{{ shop.name }}" class="mt-3 h-24 w-24 rounded-xl object-cover ring-1 ring-slate-200">
+      {% else %}
+        <p class="mt-3 text-sm text-slate-500">No logo uploaded yet. The receipt falls back to a simple text header.</p>
+      {% endif %}
+    </div>
+    <div class="card card-pad text-sm text-slate-600">
+      <h2 class="section-title">Receipt tips</h2>
+      <ul class="mt-2 list-disc space-y-1 pl-4 text-xs">
+        <li>Receipt numbers are generated automatically.</li>
+        <li>The receipt header and footer appear on every printed receipt.</li>
+        <li>Currency settings control how amounts are displayed across the entire system.</li>
+        <li>If partial payments are disabled, walk-in sales must be paid in full.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

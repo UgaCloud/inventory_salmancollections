@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{{ purchase.number }} · {{ shop.name }}{% endblock %}
+{% block content %}
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="page-title">Purchase {{ purchase.number }}</h1>
+    <p class="page-subtitle">{{ purchase.purchase_date|date:"j F Y" }} · {{ purchase.supplier.name|default:"No supplier" }}{% if purchase.reference %} · {{ purchase.reference }}{% endif %}</p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'inventory:purchases' %}" data-nav class="btn btn-secondary">All purchases</a>
+    <a href="{% url 'inventory:receive' %}" data-nav class="btn btn-primary">Receive more stock</a>
+  </div>
+</div>
+
+<div class="mb-4 grid gap-4 sm:grid-cols-3">
+  <div class="card card-pad"><p class="stat-label">Total cost</p><p class="stat-value">{{ purchase.total_cost|money:currency_symbol }}</p></div>
+  <div class="card card-pad"><p class="stat-label">Lines</p><p class="stat-value">{{ lines|length }}</p></div>
+  <div class="card card-pad"><p class="stat-label">Received by</p><p class="stat-value text-base">{{ purchase.user.get_full_name|default:purchase.user.username|default:"—" }}</p></div>
+</div>
+
+<div class="card overflow-hidden">
+  <div class="border-b border-slate-100 px-4 py-3"><h2 class="section-title">Products received</h2></div>
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>Product</th><th>Unit</th><th class="num">Quantity</th><th class="num">Cost per unit</th><th class="num">Line total</th><th>Expiry</th><th>Batch</th></tr></thead>
+      <tbody>
+        {% for line in lines %}
+          <tr>
+            <td><p class="font-medium text-slate-800">{{ line.product.name }}</p><p class="text-xs text-slate-500">{{ line.product.sku }}</p></td>
+            <td class="text-xs text-slate-500">{{ line.product.unit }}</td>
+            <td class="num">{{ line.quantity|quantity }}</td>
+            <td class="num">{{ currency_symbol }}{{ line.unit_cost|floatformat:4 }}</td>
+            <td class="num">{{ line.line_total|money:currency_symbol }}</td>
+            <td class="text-xs text-slate-500">{{ line.expiry_date|date:"j M Y"|default:"—" }}</td>
+            <td class="text-xs text-slate-500">{% if line.batch %}#{{ line.batch.pk }}{% else %}—{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="py-8 text-center text-sm text-slate-500">This purchase has no lines.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if purchase.note %}<div class="border-t border-slate-100 px-4 py-3 text-sm text-slate-600">{{ purchase.note }}</div>{% endif %}
+</div>
+{% endblock %}

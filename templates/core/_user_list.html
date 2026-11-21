@@ -1,0 +1,29 @@
+{% load ui %}
+<div class="card overflow-hidden">
+  <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+    <h2 class="section-title">Staff accounts</h2>
+    <span class="badge badge-slate">{{ profiles|length }} accounts</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>User</th><th>Role</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for profile in profiles %}
+          <tr>
+            <td>
+              <p class="font-medium text-slate-800">{{ profile.user.get_full_name|default:profile.user.username }}</p>
+              <p class="text-xs text-slate-500">@{{ profile.user.username }}{% if profile.phone %} · {{ profile.phone }}{% endif %}</p>
+            </td>
+            <td>{% if profile.role %}<span class="badge badge-indigo">{{ profile.role.name }}</span>{% else %}<span class="badge badge-amber">No role</span>{% endif %}</td>
+            <td>{% if profile.is_active %}<span class="badge badge-green">Active</span>{% else %}<span class="badge badge-slate">Inactive</span>{% endif %}</td>
+            <td class="text-right">
+              <button type="button" class="btn btn-secondary btn-sm" data-form-open="{{ list_url }}?edit={{ profile.pk }}">Edit</button>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="py-8 text-center text-sm text-slate-500">No staff accounts yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

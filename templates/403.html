@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Access denied · {{ shop.name }}{% endblock %}
+{% block content %}
+<div class="card card-pad mx-auto mt-10 max-w-lg text-center">
+  <p class="text-sm font-semibold uppercase tracking-wide text-rose-500">Access denied</p>
+  <h1 class="mt-2 text-xl font-bold text-slate-900">You do not have permission to open this page</h1>
+  <p class="mt-2 text-sm text-slate-600">Ask the owner to grant your role access to this feature. Your current role permissions are checked on the server for every action.</p>
+  <a href="{% url 'core:dashboard' %}" data-nav class="btn btn-primary mt-5">Back to dashboard</a>
+</div>
+{% endblock %}

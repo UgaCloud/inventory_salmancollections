@@ -1,0 +1,8 @@
+{% extends "core/workspace.html" %}
+{% block title %}Expenses · {{ shop.name }}{% endblock %}
+{% block page_title %}Operating expenses{% endblock %}
+{% block page_subtitle %}Rent, salaries, utilities and other costs that reduce net operating profit.{% endblock %}
+{% block page_actions %}<a href="{% url 'finance:cash' %}" data-nav class="btn btn-secondary">Cash reconciliation</a>{% endblock %}
+{% block form_toggle_label %}Add expense{% endblock %}
+{% block list %}{% include "finance/_expense_list.html" %}{% endblock %}
+{% block form %}{% include "finance/_expense_form.html" %}{% endblock %}

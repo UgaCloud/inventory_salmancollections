@@ -1,0 +1,24 @@
+{% if form.non_field_errors %}
+  <div class="form-errors" data-form-errors>
+    {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+  </div>
+{% else %}
+  <div class="form-errors hidden" data-form-errors></div>
+{% endif %}
+<div class="form-grid">
+  {% for field in form.visible_fields %}
+    <div class="{% if field.field.widget.input_type == 'textarea' or field.field.widget.input_type == 'file' or field.field.widget.input_type == 'checkbox' %}form-grid-wide{% endif %}" data-field="{{ field.name }}">
+      <label for="{{ field.id_for_label }}" class="label">
+        {{ field.label }}{% if field.field.required %} <span class="text-rose-500" aria-hidden="true">*</span>{% endif %}
+      </label>
+      {% if field.field.widget.input_type == "checkbox" %}
+        <label class="flex items-center gap-2 text-sm text-slate-700">{{ field }} <span>{{ field.help_text|default:"Enabled" }}</span></label>
+      {% else %}
+        {{ field }}
+        {% if field.help_text %}<p class="help">{{ field.help_text }}</p>{% endif %}
+      {% endif %}
+      {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+    </div>
+  {% endfor %}
+</div>
+{% for field in form.hidden_fields %}{{ field }}{% endfor %}

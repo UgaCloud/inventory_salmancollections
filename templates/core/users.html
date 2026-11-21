@@ -1,0 +1,8 @@
+{% extends "core/workspace.html" %}
+{% block title %}Users · {{ shop.name }}{% endblock %}
+{% block page_title %}Users{% endblock %}
+{% block page_subtitle %}Staff accounts and the roles that decide what each person can do.{% endblock %}
+{% block page_actions %}{% if "settings.manage" in perms %}<a href="{% url 'core:roles' %}" data-nav class="btn btn-secondary">Manage roles</a>{% endif %}{% endblock %}
+{% block form_toggle_label %}Add user{% endblock %}
+{% block list %}{% include "core/_user_list.html" %}{% endblock %}
+{% block form %}{% include "core/_user_form.html" %}{% endblock %}
