@@ -1,24 +1,53 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Sign in · {{ shop.name }}{% endblock %}
 {% block content %}
-<div class="mx-auto mt-10 max-w-md sm:mt-16">
-  <div class="mb-6 text-center">
-    {% if shop.logo %}
-      <img src="{{ shop.logo.url }}" alt="{{ shop.name }}" class="mx-auto h-14 w-14 rounded-xl object-cover ring-1 ring-slate-200">
-    {% else %}
-      <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-brand-600 text-xl font-bold text-white">{{ shop.name|slice:":1"|upper }}</span>
-    {% endif %}
-    <h1 class="mt-4 text-2xl font-bold text-slate-900">{{ shop.name }}</h1>
-    <p class="mt-1 text-sm text-slate-500">Sign in to manage the shop.</p>
+<div class="login-shell">
+  <div class="login-card card">
+    <div class="login-form-pane">
+      <div class="login-brand">
+        {% if shop.logo %}
+          <img src="{{ shop.logo.url }}" alt="{{ shop.name }}" class="h-11 w-11 rounded-xl object-cover ring-1 ring-slate-200">
+        {% else %}
+          <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-600 text-lg font-bold text-white">{{ shop.name|slice:":1"|upper }}</span>
+        {% endif %}
+        <div class="min-w-0">
+          <p class="truncate text-base font-bold text-slate-900">{{ shop.name }}</p>
+          <p class="text-xs text-slate-500">Inventory &amp; sales management</p>
+        </div>
+      </div>
+
+      <div class="mt-7">
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">Welcome back</h1>
+        <p class="mt-1 text-sm text-slate-500">Sign in to manage the shop.</p>
+      </div>
+
+      <form method="post" novalidate class="mt-6">
+        {% csrf_token %}
+        {% include "partials/form_fields.html" %}
+        <input type="hidden" name="next" value="{{ request.GET.next }}">
+        <button type="submit" class="btn btn-primary btn-block mt-4">Sign in</button>
+      </form>
+
+      <p class="mt-5 text-center text-[11px] text-slate-400">
+        Access is limited to the permissions your role has been given.
+      </p>
+    </div>
+
+    <div class="login-visual">
+      <img src="{% static 'img/login.jpg' %}" alt="" class="login-visual-img" loading="eager">
+      <div class="login-visual-overlay">
+        <p class="login-visual-eyebrow">Salmancollections</p>
+        <h2 class="login-visual-title">Every bottle, every sale, in one place.</h2>
+        <p class="login-visual-text">Stock, perfumes, customers and reports — always up to date.</p>
+      </div>
+    </div>
   </div>
-  <div class="card card-pad">
-    <form method="post" novalidate>
-      {% csrf_token %}
-      {% include "partials/form_fields.html" %}
-      <input type="hidden" name="next" value="{{ request.GET.next }}">
-      <button type="submit" class="btn btn-primary btn-block mt-2">Sign in</button>
-    </form>
+  <div class="login-footer">
+    <span>{{ shop.name }}</span>
+    <button type="button" class="theme-toggle theme-toggle-inline" data-theme-toggle aria-label="Switch colour theme">
+      <span data-theme-icon>◐</span><span data-theme-label>Theme</span>
+    </button>
   </div>
-  <p class="mt-4 text-center text-xs text-slate-400">Access is limited to the permissions your role has been given.</p>
 </div>
 {% endblock %}

@@ -1,0 +1,11 @@
+{% extends "core/workspace.html" %}
+{% block title %}Product categories · {{ shop.name }}{% endblock %}
+{% block page_title %}Product categories{% endblock %}
+{% block page_subtitle %}The categories offered by the product form. Rename or retire them; products keep their history.{% endblock %}
+{% block page_actions %}
+  <a href="{% url 'inventory:products' %}" data-nav class="btn btn-secondary">Products</a>
+  <a href="{% url 'inventory:units' %}" data-nav class="btn btn-secondary">Units</a>
+{% endblock %}
+{% block form_toggle_label %}Add category{% endblock %}
+{% block list %}{% include "inventory/_category_list.html" %}{% endblock %}
+{% block form %}{% include "inventory/_category_form.html" %}{% endblock %}

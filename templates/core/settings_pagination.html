@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Pagination · {{ shop.name }}{% endblock %}
+{% block content %}
+<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="page-title">Pagination</h1>
+    <p class="page-subtitle">How many rows each table shows before it splits into pages.</p>
+  </div>
+  <a href="{% url 'core:settings' %}" data-nav class="btn btn-secondary">Business information</a>
+</div>
+<div class="grid gap-6 xl:grid-cols-3">
+  <div class="card card-pad xl:col-span-2">
+    <form method="post" action="{% url 'core:settings_pagination' %}" data-ajax-form novalidate>
+      {% csrf_token %}
+      {% include "partials/form_fields.html" %}
+      {% include "partials/form_actions.html" with submit_label="Save pagination" cancel_url=request.path cancel_label="pagination settings" %}
+    </form>
+  </div>
+  <div class="space-y-6">
+    <div class="card card-pad text-sm text-slate-600">
+      <h2 class="section-title">How it works</h2>
+      <ul class="mt-2 list-disc space-y-1 pl-4 text-xs">
+        <li>Every table shows 10 rows per page by default.</li>
+        <li>Set a table's own size to override the default for that table only.</li>
+        <li>Values between 5 and 100 are accepted; anything else uses the default.</li>
+        <li>Filters and page links keep the table within the current filter.</li>
+      </ul>
+    </div>
+    <div class="card card-pad">
+      <h2 class="section-title">Current sizes</h2>
+      <ul class="mt-2 space-y-1 text-xs text-slate-600">
+        {% for label, value in sizes %}
+          <li class="flex items-center justify-between gap-3">
+            <span>{{ label }}</span>
+            <span class="font-semibold tabular-nums text-slate-800">{{ value }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% load ui %}
+<div class="card overflow-hidden">
+  <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+    <h2 class="section-title">Purchases</h2>
+    <span class="badge badge-slate">Page total {{ page_total|money:currency_symbol }}</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>Purchase</th><th>Date</th><th>Supplier</th><th class="num">Items</th><th class="num">Quantity</th><th class="num">Cost</th><th>Received by</th></tr></thead>
+      <tbody>
+        {% for purchase in purchases %}
+          <tr>
+            <td><a href="{% url 'inventory:purchase_detail' purchase.pk %}" data-nav class="font-semibold text-brand-600 hover:underline">{{ purchase.number }}</a>{% if purchase.reference %}<p class="text-xs text-slate-400">{{ purchase.reference }}</p>{% endif %}</td>
+            <td class="whitespace-nowrap text-slate-500">{{ purchase.purchase_date|date:"j M Y" }}</td>
+            <td>{{ purchase.supplier.name|default:"—" }}</td>
+            <td class="num">{{ purchase.lines.count }}</td>
+            <td class="num">{{ purchase.total_quantity|quantity }}</td>
+            <td class="num">{{ purchase.total_cost|money:currency_symbol }}</td>
+            <td class="text-xs text-slate-500">{{ purchase.user.username|default:"—" }}</td>
+          </tr>
+        {% empty %}
+          {% include "partials/table_empty.html" with colspan=7 icon="truck" title="No purchases found" message="Receive stock from a supplier and every purchase will be listed here." action_url="/purchases/receive/" action_label="Receive stock" %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+</div>

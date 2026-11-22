@@ -8,12 +8,11 @@ from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.http import FileResponse, Http404, HttpResponseForbidden
+from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.text import slugify
 from django.views.decorators.http import require_POST
-
-from reports.services import dashboard_context
 
 from .audit import log_action
 from .backup import (
@@ -22,10 +21,19 @@ from .backup import (
     delete_backup,
     restore_backup,
 )
+from .dashboards import PERIOD_CHOICES, build_dashboard, resolve_period
 from .decorators import perm_required
-from .forms import BusinessSettingsForm, LoginForm, PaymentMethodForm, RoleForm, StaffUserForm
+from .forms import (
+    BusinessSettingsForm,
+    LoginForm,
+    PaginationForm,
+    PaymentMethodForm,
+    RoleForm,
+    StaffUserForm,
+)
 from .http import form_errors, is_ajax, json_error, json_ok, wants_fragment
 from .models import AuditLog, BackupRecord, PaymentMethod, Role, ShopSettings, StaffProfile
+from .pagination import PAGINATION_SECTIONS, page_size_for
 from .permissions import (
     AUDIT_VIEW,
     BACKUP_MANAGE,
@@ -36,8 +44,8 @@ from .permissions import (
 )
 
 
-def paginate(request, queryset, per_page=20):
-    return Paginator(queryset, per_page).get_page(request.GET.get("page"))
+def paginate(request, queryset, section="default"):
+    return Paginator(queryset, page_size_for(section)).get_page(request.GET.get("page"))
 
 
 def permission_denied_view(request, exception=None):
@@ -66,11 +74,22 @@ def logout_view(request):
 
 @perm_required(DASHBOARD_VIEW)
 def dashboard(request):
-    context = dashboard_context()
-    context["audit_events"] = (
-        AuditLog.objects.select_related("user").all()[:6]
-        if AUDIT_VIEW in user_permissions(request.user)
-        else []
+    period, start, end, subtitle = resolve_period(request.GET)
+    context = build_dashboard(request.user, start, end)
+    context.update(
+        {
+            "period": period,
+            "period_choices": PERIOD_CHOICES,
+            "start": start,
+            "end": end,
+            "period_subtitle": subtitle,
+            "today": timezone.localdate(),
+            "audit_events": (
+                AuditLog.objects.select_related("user").all()[:6]
+                if AUDIT_VIEW in user_permissions(request.user)
+                else []
+            ),
+        }
     )
     return render(request, "core/dashboard.html", context)
 
@@ -91,6 +110,33 @@ def settings_business(request):
         if is_ajax(request):
             return json_error(errors=form_errors(form))
     return render(request, "core/settings_business.html", {"form": form, "shop": shop})
+
+
+@perm_required(SETTINGS_MANAGE)
+def settings_pagination(request):
+    shop = ShopSettings.load()
+    form = PaginationForm(instance=shop)
+    if request.method == "POST":
+        form = PaginationForm(request.POST, instance=shop)
+        if form.is_valid():
+            form.save()
+            log_action(action="Pagination settings updated", user=request.user, target=shop, request=request)
+            if is_ajax(request):
+                return json_ok("Pagination settings saved.", refresh=True)
+            messages.success(request, "Pagination settings saved.")
+            return redirect("core:settings_pagination")
+        if is_ajax(request):
+            return json_error(errors=form_errors(form))
+    return render(
+        request,
+        "core/settings_pagination.html",
+        {
+            "form": form,
+            "shop": shop,
+            "sections": PAGINATION_SECTIONS,
+            "sizes": [(label, page_size_for(key)) for key, label in PAGINATION_SECTIONS],
+        },
+    )
 
 
 @perm_required(SETTINGS_MANAGE)
@@ -183,6 +229,7 @@ def users(request):
         "form": form,
         "editing": editing,
         "profiles": profiles,
+        "roles": Role.objects.all(),
         "roles_count": Role.objects.count(),
         "list_url": request.path,
     }
@@ -194,41 +241,107 @@ def users(request):
     return render(request, "core/users.html", context)
 
 
+@perm_required(USERS_MANAGE)
+@require_POST
+def user_role(request, pk):
+    """Change a staff member's role straight from the users table."""
+    profile = get_object_or_404(StaffProfile.objects.select_related("user", "role"), pk=pk)
+    role_id = (request.POST.get("role") or "").strip()
+    role = get_object_or_404(Role, pk=role_id) if role_id else None
+    if profile.user_id == request.user.pk and (role is None or role.slug != "owner"):
+        return json_error("You cannot remove your own owner role.")
+    profile.role = role
+    profile.save(update_fields=["role"])
+    log_action(
+        action="User role changed",
+        user=request.user,
+        target=profile,
+        detail={"username": profile.user.username, "role": role.name if role else "None"},
+        request=request,
+    )
+    return json_ok(
+        f"{profile.user.get_full_name() or profile.user.username} is now "
+        f"{role.name if role else 'without a role'}.",
+        refresh_list=True,
+    )
+
+
+def _unique_role_slug(name):
+    base = slugify(name)[:50] or "role"
+    slug = base
+    suffix = 2
+    while Role.objects.filter(slug=slug).exists():
+        slug = f"{base}-{suffix}"
+        suffix += 1
+    return slug
+
+
 @perm_required(SETTINGS_MANAGE)
 def roles(request):
     roles_list = list(Role.objects.all())
-    role = roles_list[0] if roles_list else None
-    if request.GET.get("role"):
+    creating = request.GET.get("new") == "1"
+    role = None if creating else (roles_list[0] if roles_list else None)
+    if not creating and request.GET.get("role"):
         role = get_object_or_404(Role, pk=request.GET["role"])
     form = RoleForm(instance=role)
     locked = bool(role and role.slug == "owner")
     if request.method == "POST":
-        role = get_object_or_404(Role, pk=request.POST.get("role"))
-        locked = role.slug == "owner"
-        if locked:
-            messages.error(request, "The Owner role always has full access and cannot be edited.")
-            return redirect(f"{request.path}?role={role.pk}")
-        form = RoleForm(request.POST, instance=role)
-        if form.is_valid():
-            role = form.save()
-            log_action(
-                action="Role permissions updated",
-                user=request.user,
-                target=role,
-                detail={"permissions": role.permissions},
-                request=request,
-            )
-            messages.success(request, "Role permissions updated.")
-            return redirect(f"{request.path}?role={role.pk}")
-        messages.error(request, "Please correct the errors below.")
+        if request.POST.get("action") == "create":
+            creating = True
+            role = None
+            form = RoleForm(request.POST)
+            if form.is_valid():
+                role = form.save(commit=False)
+                role.slug = _unique_role_slug(role.name)
+                role.is_system = False
+                role.save()
+                log_action(
+                    action="Role created",
+                    user=request.user,
+                    target=role,
+                    detail={"permissions": role.permissions},
+                    request=request,
+                )
+                messages.success(request, f"Role “{role.name}” created.")
+                return redirect(f"{request.path}?role={role.pk}")
+            messages.error(request, "Please correct the errors below.")
+        else:
+            locked = False
+            role = get_object_or_404(Role, pk=request.POST.get("role"))
+            locked = role.slug == "owner"
+            if locked:
+                messages.error(request, "The Owner role always has full access and cannot be edited.")
+                return redirect(f"{request.path}?role={role.pk}")
+            form = RoleForm(request.POST, instance=role)
+            if form.is_valid():
+                role = form.save()
+                log_action(
+                    action="Role permissions updated",
+                    user=request.user,
+                    target=role,
+                    detail={"permissions": role.permissions},
+                    request=request,
+                )
+                messages.success(request, "Role permissions updated.")
+                return redirect(f"{request.path}?role={role.pk}")
+            messages.error(request, "Please correct the errors below.")
+    if role:
+        selected_permissions = role.permissions or []
+    elif request.method == "POST":
+        selected_permissions = request.POST.getlist("permissions")
+    else:
+        selected_permissions = []
     return render(
         request,
         "core/roles.html",
         {
             "roles": roles_list,
             "role": role,
+            "editing": role or creating,
+            "creating": creating,
             "form": form,
             "locked": locked,
+            "selected_permissions": selected_permissions,
         },
     )
 
@@ -276,6 +389,58 @@ def backups(request):
     )
 
 
+def pwa_manifest(request):
+    shop = ShopSettings.load()
+    payload = {
+        "name": f"{shop.name} — Inventory & Sales",
+        "short_name": shop.name[:12] or "Inventory",
+        "description": "Boutique inventory, point of sale and business reports.",
+        "start_url": "/",
+        "scope": "/",
+        "display": "standalone",
+        "orientation": "any",
+        "background_color": "#ffffff",
+        "theme_color": "#4f46e5",
+        "icons": [
+            {
+                "src": django_settings.STATIC_URL + "img/icon-192.png",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any",
+            },
+            {
+                "src": django_settings.STATIC_URL + "img/icon-512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any",
+            },
+            {
+                "src": django_settings.STATIC_URL + "img/icon-maskable-512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "maskable",
+            },
+        ],
+        "shortcuts": [
+            {"name": "Point of sale", "url": "/pos/"},
+            {"name": "Sales", "url": "/sales/"},
+            {"name": "Stock", "url": "/inventory/stock/"},
+        ],
+    }
+    return JsonResponse(payload, json_dumps_params={"indent": 2}, content_type="application/manifest+json")
+
+
+def pwa_service_worker(request):
+    path = Path(django_settings.BASE_DIR) / "static" / "js" / "service-worker.js"
+    response = HttpResponse(path.read_text(encoding="utf-8"), content_type="application/javascript")
+    response["Service-Worker-Allowed"] = "/"
+    response["Cache-Control"] = "no-cache"
+    return response
+
+def offline(request):
+    return render(request, "core/offline.html")
+
+
 @perm_required(BACKUP_MANAGE)
 def backup_download(request, pk):
     record = get_object_or_404(BackupRecord, pk=pk)
@@ -311,10 +476,11 @@ def audit_log(request):
             entries = entries.filter(created_at__date=datetime.strptime(day, "%Y-%m-%d").date())
         except ValueError:
             pass
-    page = paginate(request, entries, per_page=30)
+    page = paginate(request, entries, "audit")
     actions = AuditLog.objects.values_list("action", flat=True).distinct().order_by("action")
+    template = "core/_audit_list.html" if wants_fragment(request) == "list" else "core/audit.html"
     return render(
         request,
-        "core/audit.html",
+        template,
         {"page": page, "entries": page, "actions": actions, "q": query, "action": action, "day": day},
     )

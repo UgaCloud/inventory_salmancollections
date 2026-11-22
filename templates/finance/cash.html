@@ -31,7 +31,7 @@
       <form method="post" novalidate>
         {% csrf_token %}
         {% include "partials/form_fields.html" %}
-        <button type="submit" class="btn btn-primary btn-block">Save reconciliation</button>
+        {% include "partials/form_actions.html" with submit_label="Save reconciliation" cancel_label="cash reconciliation" %}
       </form>
     </div>
   </div>
@@ -54,7 +54,7 @@
               <td class="text-xs text-slate-500">{{ record.user.username|default:"—" }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="6" class="py-8 text-center text-sm text-slate-500">No reconciliations recorded yet.</td></tr>
+            {% include "partials/table_empty.html" with colspan=6 icon="wallet" title="No reconciliations yet" message="Count the cash at the end of the day to compare it with the expected amount." %}
           {% endfor %}
         </tbody>
       </table>

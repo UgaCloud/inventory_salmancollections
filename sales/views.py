@@ -14,8 +14,9 @@ from django.views.decorators.http import require_POST
 
 from core.audit import log_action
 from core.decorators import perm_required, perm_required_any
-from core.http import form_errors, is_ajax, json_error, json_ok
+from core.http import form_errors, is_ajax, json_error, json_ok, wants_fragment
 from core.models import PaymentMethod, ShopSettings
+from core.pagination import page_size_for
 from core.permissions import (
     CUSTOMERS_MANAGE,
     MIXTURES_MANAGE,
@@ -31,8 +32,8 @@ from .models import Customer, CustomerPayment, Mixture, Sale, SaleItem, SalePaym
 from .services import cancel_sale, checkout, prepare_mixture, record_customer_payment
 
 
-def _paginate(request, queryset, per_page=20):
-    return Paginator(queryset, per_page).get_page(request.GET.get("page"))
+def _paginate(request, queryset, section="default"):
+    return Paginator(queryset, page_size_for(section)).get_page(request.GET.get("page"))
 
 
 def _catalogue_queryset():
@@ -56,14 +57,16 @@ def _catalogue_products(request):
         )
     if category:
         products = products.filter(category_id=category)
-    return products[:200]
+    return products
 
 
 @perm_required(POS_USE)
 def pos(request):
     shop = ShopSettings.load()
+    page = _paginate(request, _catalogue_products(request), "pos")
     context = {
-        "products": _catalogue_products(request),
+        "page": page,
+        "products": page,
         "categories": Category.objects.filter(products__is_active=True).distinct().order_by("name"),
         "customers": Customer.objects.filter(is_active=True).order_by("name"),
         "methods": PaymentMethod.objects.filter(is_active=True),
@@ -83,10 +86,11 @@ def pos(request):
 
 @perm_required(POS_USE)
 def pos_catalogue(request):
+    page = _paginate(request, _catalogue_products(request), "pos")
     return render(
         request,
         "sales/_catalogue.html",
-        {"products": _catalogue_products(request)},
+        {"page": page, "products": page},
     )
 
 
@@ -169,9 +173,10 @@ def sale_receipt(request, pk):
     )
     items = sale.items.select_related("product")
     payments = sale.payments.all()
+    template = "sales/_receipt_modal.html" if request.GET.get("modal") == "1" else "sales/receipt.html"
     return render(
         request,
-        "sales/receipt.html",
+        template,
         {
             "sale": sale,
             "items": items,
@@ -203,13 +208,14 @@ def sales(request):
                 queryset = queryset.filter(**{lookup: datetime.strptime(raw, "%Y-%m-%d").date()})
             except ValueError:
                 pass
-    page = _paginate(request, queryset)
+    page = _paginate(request, queryset, "sales")
     totals = queryset.filter(status=Sale.STATUS_COMPLETED).aggregate(
         total=Sum("total"), paid=Sum("paid"), balance=Sum("balance")
     )
+    template = "sales/_sales_list.html" if wants_fragment(request) == "list" else "sales/sales.html"
     return render(
         request,
-        "sales/sales.html",
+        template,
         {
             "page": page,
             "sales": page,
@@ -311,6 +317,16 @@ def mixtures(request):
                     detail={"ml": str(mixture.total_ml), "price": str(mixture.price)},
                     request=request,
                 )
+                if is_ajax(request) and request.POST.get("drawer") == "1":
+                    return json_ok(
+                        f"Mixture {mixture.name} prepared.",
+                        drawer_refresh=f"{reverse('sales:mixtures')}?sell={mixture.pk}",
+                    )
+                if is_ajax(request):
+                    return json_ok(
+                        f"Mixture {mixture.name} prepared.",
+                        redirect=f"{reverse('sales:mixtures')}?sell={mixture.pk}",
+                    )
                 messages.success(
                     request,
                     f"Mixture {mixture.name} prepared. Add it to the POS cart or sell it right here.",
@@ -323,22 +339,22 @@ def mixtures(request):
         .select_related("balance")
         .order_by("name")
     )
-    return render(
-        request,
-        "sales/mixtures.html",
-        {
-            "form": form,
-            "perfumes": perfumes,
-            "component_errors": component_errors,
-            "prepared": Mixture.objects.filter(status=Mixture.STATUS_PREPARED)
-            .prefetch_related("components__product")
-            .order_by("name"),
-            "history": Mixture.objects.exclude(status=Mixture.STATUS_PREPARED)
-            .prefetch_related("components__product")
-            .order_by("-created_at")[:20],
-            "sale_form": MixtureSaleForm(),
-        },
-    )
+    context = {
+        "form": form,
+        "perfumes": perfumes,
+        "component_errors": component_errors,
+        "prepared": Mixture.objects.filter(status=Mixture.STATUS_PREPARED)
+        .prefetch_related("components__product")
+        .order_by("name"),
+        "history": Mixture.objects.exclude(status=Mixture.STATUS_PREPARED)
+        .prefetch_related("components__product")
+        .order_by("-created_at")[:20],
+        "sale_form": MixtureSaleForm(),
+        "list_url": request.path,
+    }
+    if request.GET.get("drawer") == "1":
+        return render(request, "sales/_mixtures_drawer.html", context)
+    return render(request, "sales/mixtures.html", context)
 
 
 @perm_required_any(POS_USE, MIXTURES_MANAGE)
@@ -439,7 +455,7 @@ def customers(request):
         )
     if balance_filter == "outstanding":
         customers_list = customers_list.filter(outstanding__gt=0)
-    page = _paginate(request, customers_list)
+    page = _paginate(request, customers_list, "customers")
     context = {
         "form": form,
         "editing": editing,
@@ -523,10 +539,11 @@ def payments(request):
         queryset = queryset.filter(
             Q(customer__name__icontains=query) | Q(reference__icontains=query)
         )
-    page = _paginate(request, queryset, per_page=30)
+    page = _paginate(request, queryset, "payments")
     total = sum((payment.amount for payment in page), Decimal("0"))
+    template = "sales/_payments_list.html" if wants_fragment(request) == "list" else "sales/payments.html"
     return render(
         request,
-        "sales/payments.html",
+        template,
         {"page": page, "payments": page, "q": query, "page_total": total},
     )

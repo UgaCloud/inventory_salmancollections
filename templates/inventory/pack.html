@@ -25,7 +25,7 @@
             <td class="num">{{ currency_symbol }}{{ run.cost_per_bottle|floatformat:2 }}</td>
           </tr>
         {% empty %}
-          <tr><td colspan="6" class="py-10 text-center text-sm text-slate-500">No packing runs yet.</td></tr>
+          {% include "partials/table_empty.html" with colspan=6 icon="box" title="No packing runs yet" message="Packing bulk perfume into bottles creates stock for the packed product." %}
         {% endfor %}
       </tbody>
     </table>
@@ -39,7 +39,7 @@
   <form method="post" action="{{ list_url }}" data-ajax-form data-list-url="{{ list_url }}" novalidate id="pack-form">
     {% csrf_token %}
     {% include "partials/form_fields.html" %}
-    <button type="submit" class="btn btn-primary btn-block">Pack bottles</button>
+    {% include "partials/form_actions.html" with submit_label="Pack bottles" cancel_label="packing run" %}
   </form>
   <div class="mt-4 rounded-lg bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-500">
     Producing 10 bottles of 50ml deducts 500ml from the bulk perfume and adds 10 bottles to the packed product's own stock.

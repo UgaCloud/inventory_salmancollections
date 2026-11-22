@@ -10,7 +10,6 @@
     </select>
     <input type="date" name="start" value="{{ filters.start }}" class="w-40" aria-label="From date">
     <input type="date" name="end" value="{{ filters.end }}" class="w-40" aria-label="To date">
-    <button type="submit" class="btn btn-secondary">Filter</button>
   </form>
   <div class="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
     <h2 class="section-title">Expenses</h2>
@@ -36,7 +35,7 @@
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="6" class="py-10 text-center text-sm text-slate-500">No expenses recorded for this view.</td></tr>
+          {% include "partials/table_empty.html" with colspan=6 icon="wallet" title="No expenses found" message="Record rent, salaries, utilities and other operating costs so net profit stays accurate." action_url=list_url action_label="Record an expense" %}
         {% endfor %}
       </tbody>
     </table>

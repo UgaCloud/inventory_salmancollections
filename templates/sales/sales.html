@@ -10,10 +10,10 @@
   {% if "pos.use" in perms %}<a href="{% url 'sales:pos' %}" data-nav class="btn btn-primary">Open point of sale</a>{% endif %}
 </div>
 
-<form method="get" class="card mb-4 flex flex-wrap items-end gap-2 p-3">
+<form method="get" action="{% url 'sales:list' %}" data-filter-form data-list-url="{% url 'sales:list' %}" class="card mb-4 flex flex-wrap items-end gap-2 p-3">
   <div class="min-w-[12rem] flex-1">
     <label for="sales-q" class="label">Search</label>
-    <input type="search" id="sales-q" name="q" value="{{ filters.q }}" placeholder="Receipt number, customer name or phone">
+    <input type="search" id="sales-q" name="q" value="{{ filters.q }}" placeholder="Receipt number, customer name or phone" autocomplete="off">
   </div>
   <div class="w-40">
     <label for="sales-status" class="label">Status</label>
@@ -31,7 +31,6 @@
     <label for="sales-end" class="label">To</label>
     <input type="date" id="sales-end" name="end" value="{{ filters.end }}">
   </div>
-  <button type="submit" class="btn btn-secondary">Filter</button>
   <a href="{% url 'sales:list' %}" data-nav class="btn btn-ghost">Reset</a>
 </form>
 
@@ -41,31 +40,7 @@
   <div class="card card-pad"><p class="stat-label">Outstanding</p><p class="stat-value">{{ totals.balance|money:currency_symbol }}</p></div>
 </div>
 
-<div class="card overflow-hidden">
-  <div class="overflow-x-auto">
-    <table class="table">
-      <thead><tr><th>Receipt</th><th>Date</th><th>Customer</th><th>Cashier</th><th class="num">Total</th><th class="num">Paid</th><th class="num">Balance</th><th>Status</th><th></th></tr></thead>
-      <tbody>
-        {% for sale in sales %}
-          <tr>
-            <td><a href="{% url 'sales:detail' sale.pk %}" data-nav class="font-semibold text-brand-600 hover:underline">{{ sale.number }}</a></td>
-            <td class="whitespace-nowrap text-xs text-slate-500">{{ sale.created_at|date:"j M Y H:i" }}</td>
-            <td>{{ sale.customer.name|default:"Walk-in" }}</td>
-            <td class="text-xs text-slate-500">{{ sale.cashier.username|default:"—" }}</td>
-            <td class="num">{{ sale.total|money:currency_symbol }}</td>
-            <td class="num">{{ sale.paid|money:currency_symbol }}</td>
-            <td class="num {% if sale.balance %}text-rose-600{% endif %}">{{ sale.balance|money:currency_symbol }}</td>
-            <td>{% if sale.status == "completed" %}<span class="badge badge-green">Completed</span>{% else %}<span class="badge badge-red">Cancelled</span>{% endif %}</td>
-            <td class="whitespace-nowrap text-right">
-              <a href="{% url 'sales:receipt' sale.pk %}" target="_blank" class="btn btn-secondary btn-sm">Receipt</a>
-            </td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="9" class="py-10 text-center text-sm text-slate-500">No sales match this view.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% include "partials/pagination.html" %}
+<div data-list-container data-list-url="{% url 'sales:list' %}">
+  {% include "sales/_sales_list.html" %}
 </div>
 {% endblock %}

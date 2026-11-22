@@ -20,7 +20,7 @@
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="5" class="py-8 text-center text-sm text-slate-500">No payment methods yet.</td></tr>
+          {% include "partials/table_empty.html" with colspan=5 icon="wallet" title="No payment methods yet" message="Add cash, card or mobile money so the point of sale can record payments." action_url=list_url action_label="Add a method" %}
         {% endfor %}
       </tbody>
     </table>

@@ -174,4 +174,5 @@
 
   document.addEventListener("DOMContentLoaded", init);
   document.addEventListener("app:page-loaded", init);
+  document.addEventListener("app:drawer-loaded", init);
 })();

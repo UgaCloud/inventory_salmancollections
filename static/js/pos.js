@@ -181,7 +181,7 @@
     renderCart();
   }
 
-  async function loadCatalogue() {
+  async function loadCatalogue(page) {
     const search = document.getElementById("pos-search");
     const category = document.getElementById("pos-category");
     const container = document.getElementById("pos-catalogue");
@@ -189,6 +189,7 @@
     const params = new URLSearchParams();
     if (search && search.value.trim()) params.set("q", search.value.trim());
     if (category && category.value) params.set("category", category.value);
+    if (page && Number(page) > 1) params.set("page", page);
     const response = await fetch(`${cfg.catalogueUrl}?${params.toString()}`, {
       headers: { "X-Requested-With": "XMLHttpRequest" },
     });
@@ -200,6 +201,11 @@
     const catalogue = document.getElementById("pos-catalogue");
     if (catalogue) {
       catalogue.addEventListener("click", (event) => {
+        const pageButton = event.target.closest("[data-catalogue-page]");
+        if (pageButton) {
+          loadCatalogue(pageButton.dataset.cataloguePage);
+          return;
+        }
         const productButton = event.target.closest("[data-add-product]");
         if (productButton) {
           addProduct(productButton.dataset);

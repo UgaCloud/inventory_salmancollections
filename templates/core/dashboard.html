@@ -1,11 +1,12 @@
 {% extends "base.html" %}
-{% load ui %}
-{% block title %}Dashboard · {{ shop.name }}{% endblock %}
+{% load ui static %}
+{% block title %}{{ dashboard_label }} · {{ shop.name }}{% endblock %}
 {% block content %}
-<div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+<div class="mb-4 flex flex-wrap items-end justify-between gap-3">
   <div>
+    <p class="stat-label mb-1">{{ dashboard_label }}</p>
     <h1 class="page-title">Dashboard</h1>
-    <p class="page-subtitle">{{ today|date:"l, j F Y" }} · {{ shop.name }}</p>
+    <p class="page-subtitle">{{ period_subtitle }} · {{ shop.name }}</p>
   </div>
   <div class="flex flex-wrap gap-2">
     {% if "pos.use" in perms %}<a href="{% url 'sales:pos' %}" data-nav class="btn btn-primary">New sale</a>{% endif %}
@@ -14,154 +15,102 @@
   </div>
 </div>
 
-<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-  <div class="card card-pad">
-    <p class="stat-label">Today's sales</p>
-    <p class="stat-value">{{ today_sales|money:currency_symbol }}</p>
-    <p class="mt-1 text-xs text-slate-500">This month {{ month_revenue|money:currency_symbol }}</p>
-  </div>
-  <div class="card card-pad">
-    <p class="stat-label">Money received today</p>
-    <p class="stat-value">{{ today_received|money:currency_symbol }}</p>
-    <p class="mt-1 text-xs text-slate-500">Outstanding {{ outstanding|money:currency_symbol }}</p>
-  </div>
-  <div class="card card-pad">
-    <p class="stat-label">Gross profit today</p>
-    <p class="stat-value">{{ today_profit|money:currency_symbol }}</p>
-    <p class="mt-1 text-xs text-slate-500">This month {{ month_profit|money:currency_symbol }}</p>
-  </div>
-  <div class="card card-pad">
-    <p class="stat-label">Operating expenses today</p>
-    <p class="stat-value">{{ today_expenses|money:currency_symbol }}</p>
-    <p class="mt-1 text-xs text-slate-500">Net today {{ today_profit|money:currency_symbol }}</p>
+<div class="card mb-5 p-3">
+  <div class="flex flex-wrap items-center gap-2">
+    {% for key, label in period_choices %}
+      <a href="?period={{ key }}{% if key == 'custom' %}&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}{% endif %}"
+         data-nav class="period-chip {% if period == key %}is-active{% endif %}">{{ label }}</a>
+    {% endfor %}
+    <form method="get" action="{{ request.path }}" data-period-form class="ml-auto flex flex-wrap items-center gap-2">
+      <input type="hidden" name="period" value="custom">
+      <label class="sr-only" for="dashboard-start">From date</label>
+      <input type="date" id="dashboard-start" name="start" value="{{ start|date:'Y-m-d' }}" class="w-40">
+      <span class="text-xs text-slate-400">to</span>
+      <label class="sr-only" for="dashboard-end">To date</label>
+      <input type="date" id="dashboard-end" name="end" value="{{ end|date:'Y-m-d' }}" class="w-40">
+      <button type="submit" class="btn btn-secondary btn-sm">Apply</button>
+    </form>
   </div>
 </div>
 
-<div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-  <a href="{% url 'inventory:stock' %}" data-nav class="card card-pad flex items-center justify-between hover:border-brand-300">
-    <div><p class="stat-label">Products</p><p class="text-xl font-bold">{{ product_count }}</p></div>
-    <span class="badge badge-indigo">Catalogue</span>
-  </a>
-  <a href="{% url 'inventory:stock' %}?status=low" data-nav class="card card-pad flex items-center justify-between hover:border-brand-300">
-    <div><p class="stat-label">Low stock</p><p class="text-xl font-bold">{{ low_stock_count }}</p></div>
-    <span class="badge badge-amber">Reorder</span>
-  </a>
-  <a href="{% url 'inventory:stock' %}?status=out" data-nav class="card card-pad flex items-center justify-between hover:border-brand-300">
-    <div><p class="stat-label">Out of stock</p><p class="text-xl font-bold">{{ out_of_stock_count }}</p></div>
-    <span class="badge badge-red">Unavailable</span>
-  </a>
-  <div class="card card-pad flex items-center justify-between">
-    <div><p class="stat-label">Stock value (cost)</p><p class="text-xl font-bold">{{ stock_value|money:currency_symbol }}</p></div>
-    <span class="badge badge-slate">{{ customer_count }} customers</span>
-  </div>
+<div class="grid gap-4 sm:grid-cols-2{% if dashboard_kind != 'cashier' %} xl:grid-cols-4{% endif %}">
+  {% for metric in metrics %}
+    <div class="card card-pad">
+      <p class="stat-label">{{ metric.label }}</p>
+      <p class="stat-value">{{ metric.value }}</p>
+      {% if metric.hint %}<p class="mt-1 text-xs text-slate-500">{{ metric.hint }}</p>{% endif %}
+    </div>
+  {% endfor %}
 </div>
 
-<div class="mt-6 grid gap-6 xl:grid-cols-3">
-  <div class="card xl:col-span-2">
-    <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-      <h2 class="section-title">Recent sales</h2>
-      {% if "pos.use" in perms %}<a href="{% url 'sales:list' %}" data-nav class="text-xs font-semibold text-brand-600 hover:underline">All sales &amp; receipts</a>{% endif %}
-    </div>
-    <div class="overflow-x-auto">
-      <table class="table">
-        <thead><tr><th>Receipt</th><th>Time</th><th>Customer</th><th class="num">Total</th><th class="num">Balance</th><th>Status</th></tr></thead>
-        <tbody>
-          {% for sale in recent_sales %}
-            <tr>
-              <td><a class="font-semibold text-brand-600 hover:underline" href="{% url 'sales:detail' sale.pk %}" data-nav>{{ sale.number }}</a></td>
-              <td class="whitespace-nowrap text-slate-500">{{ sale.created_at|date:"H:i" }}</td>
-              <td>{{ sale.customer.name|default:"Walk-in" }}</td>
-              <td class="num">{{ sale.total|money:currency_symbol }}</td>
-              <td class="num">{{ sale.balance|money:currency_symbol }}</td>
-              <td>
-                {% if sale.status == "completed" %}<span class="badge badge-green">Completed</span>
-                {% else %}<span class="badge badge-red">Cancelled</span>{% endif %}
-              </td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="6" class="py-8 text-center text-sm text-slate-500">No sales yet today.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="space-y-6">
-    <div class="card">
-      <div class="border-b border-slate-100 px-4 py-3"><h2 class="section-title">Best sellers (30 days)</h2></div>
-      <ul class="divide-y divide-slate-100">
-        {% for item in best_sellers %}
-          <li class="flex items-center justify-between gap-3 px-4 py-2.5">
-            <span class="min-w-0 truncate text-sm text-slate-700">{{ item.description }}</span>
-            <span class="whitespace-nowrap text-xs font-semibold text-slate-500">{{ item.quantity|quantity }} sold · {{ item.revenue|money:currency_symbol }}</span>
-          </li>
-        {% empty %}
-          <li class="px-4 py-6 text-center text-sm text-slate-500">No sales in the last 30 days.</li>
-        {% endfor %}
-      </ul>
-    </div>
-    <div class="card">
-      <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-        <h2 class="section-title">Low stock</h2>
-        <a href="{% url 'inventory:stock' %}?status=low" data-nav class="text-xs font-semibold text-brand-600 hover:underline">View all</a>
-      </div>
-      <ul class="divide-y divide-slate-100">
-        {% for product in low_stock %}
-          <li class="flex items-center justify-between gap-3 px-4 py-2.5">
-            <span class="min-w-0 truncate text-sm text-slate-700">{{ product.name }}</span>
-            <span class="badge badge-amber">{{ product.stock_quantity|quantity }} {{ product.unit }}</span>
-          </li>
-        {% empty %}
-          <li class="px-4 py-6 text-center text-sm text-slate-500">No products at their reorder level.</li>
-        {% endfor %}
-      </ul>
-    </div>
-  </div>
-</div>
-
-<div class="mt-6 grid gap-6 xl:grid-cols-3">
-  <div class="card xl:col-span-2">
-    <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-      <h2 class="section-title">Recent stock receiving</h2>
-      {% if "purchases.manage" in perms %}<a href="{% url 'inventory:purchases' %}" data-nav class="text-xs font-semibold text-brand-600 hover:underline">Purchase history</a>{% endif %}
-    </div>
-    <div class="overflow-x-auto">
-      <table class="table">
-        <thead><tr><th>Purchase</th><th>Date</th><th>Supplier</th><th class="num">Cost</th></tr></thead>
-        <tbody>
-          {% for purchase in recent_purchases %}
-            <tr>
-              <td>{% if "purchases.manage" in perms %}<a class="font-semibold text-brand-600 hover:underline" href="{% url 'inventory:purchase_detail' purchase.pk %}" data-nav>{{ purchase.number }}</a>{% else %}{{ purchase.number }}{% endif %}</td>
-              <td class="whitespace-nowrap text-slate-500">{{ purchase.purchase_date|date:"j M Y" }}</td>
-              <td>{{ purchase.supplier.name|default:"—" }}</td>
-              <td class="num">{{ purchase.total_cost|money:currency_symbol }}</td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="4" class="py-8 text-center text-sm text-slate-500">No stock has been received yet.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-  <div class="card">
-    <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-      <h2 class="section-title">Prepared mixtures</h2>
-      {% if "mixtures.manage" in perms %}<a href="{% url 'sales:mixtures' %}" data-nav class="text-xs font-semibold text-brand-600 hover:underline">Manage</a>{% endif %}
-    </div>
-    <div class="px-4 py-4">
-      <p class="text-2xl font-bold text-slate-900">{{ prepared_mixtures }}</p>
-      <p class="text-xs text-slate-500">ready to sell in the point of sale</p>
-      {% if audit_events %}
-        <div class="mt-4 border-t border-slate-100 pt-3">
-          <p class="stat-label">Latest activity</p>
-          <ul class="mt-2 space-y-2">
-            {% for entry in audit_events %}
-              <li class="text-xs text-slate-600"><span class="font-medium">{{ entry.action }}</span> · {{ entry.created_at|date:"j M H:i" }}</li>
-            {% endfor %}
-          </ul>
+{% if charts %}
+  <div class="mt-6 grid gap-6 lg:grid-cols-2">
+    {% for chart in charts %}
+      <div class="card">
+        <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+          <h2 class="section-title">{{ chart.title }}</h2>
+          <span class="badge badge-slate">Selected period</span>
         </div>
-      {% endif %}
-    </div>
+        <div class="p-4">
+          <div class="chart-wrap {% if chart.type == 'doughnut' %}chart-wrap-doughnut{% endif %}">
+            <canvas data-chart-index="{{ forloop.counter0 }}" aria-label="{{ chart.title }}" role="img"></canvas>
+          </div>
+          <div class="chart-empty hidden" data-chart-empty="{{ forloop.counter0 }}">
+            {% include "partials/empty_state.html" with icon="chart" title="Nothing to chart yet" message="Once there is activity in this period the chart will appear here." %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
   </div>
-</div>
+{% endif %}
+
+{% if tables %}
+  <div class="mt-6 grid gap-6 lg:grid-cols-2">
+    {% for table in tables %}
+      <div class="card overflow-hidden">
+        <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+          <h2 class="section-title">{{ table.title }}</h2>
+          {% if table.action_url %}<a href="{{ table.action_url }}" data-nav class="text-xs font-semibold text-brand-600 hover:underline">{{ table.action_label }}</a>{% endif %}
+        </div>
+        <div class="overflow-x-auto">
+          <table class="table">
+            <thead>
+              <tr>
+                {% for column in table.columns %}
+                  <th {% if forloop.counter0 > 2 %}class="num"{% endif %}>{{ column }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in table.rows %}
+                <tr>
+                  {% for cell in row.cells %}
+                    <td {% if forloop.counter0 > 2 %}class="num"{% endif %}>
+                      {% if forloop.first and row.url %}
+                        <a href="{{ row.url }}" data-nav class="font-medium text-brand-600 hover:underline">{{ cell }}</a>
+                      {% else %}{{ cell }}{% endif %}
+                    </td>
+                  {% endfor %}
+                </tr>
+              {% empty %}
+                {% include "partials/table_empty.html" with colspan=table.columns|length icon=table.empty_icon title=table.empty message=table.empty action_url=table.action_url action_label=table.action_label %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{{ charts|json_script:"dashboard-charts" }}
+{% endblock %}
+{% block extra_js %}
+  <script src="{% static 'js/vendor/chart.umd.min.js' %}?v=6"></script>
+  <script>
+    if (typeof Chart === "undefined") {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"><\/script>');
+    }
+  </script>
+  <script src="{% static 'js/charts.js' %}?v=7"></script>
 {% endblock %}

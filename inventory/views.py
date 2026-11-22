@@ -12,16 +12,19 @@ from core.audit import log_action
 from core.decorators import perm_required, perm_required_any
 from core.http import form_errors, is_ajax, json_error, json_ok, wants_fragment
 from core.models import ShopSettings
+from core.pagination import page_size_for
 from core.permissions import PRODUCTS_MANAGE, PURCHASES_MANAGE, STOCK_ADJUST
 from core.utils import money, to_decimal
 
 from .forms import (
+    CategoryForm,
     ImportForm,
     PackForm,
     ProductForm,
     PurchaseForm,
     StockAdjustForm,
     SupplierForm,
+    UnitForm,
 )
 from .importing import import_products, template_csv
 from .models import (
@@ -32,12 +35,13 @@ from .models import (
     StockAdjustment,
     StockBatch,
     Supplier,
+    Unit,
 )
 from .services import InsufficientStock, add_opening_stock, adjust_stock, pack_from_bulk, receive_purchase
 
 
-def _paginate(request, queryset, per_page=20):
-    return Paginator(queryset, per_page).get_page(request.GET.get("page"))
+def _paginate(request, queryset, section="default"):
+    return Paginator(queryset, page_size_for(section)).get_page(request.GET.get("page"))
 
 
 def _product_queryset():
@@ -128,7 +132,9 @@ def _product_workspace(request, *, template, fixed_kind=None):
         products = products.filter(Q(balance__quantity__lte=0) | Q(balance__isnull=True))
     elif status == "inactive":
         products = products.filter(is_active=False)
-    page = _paginate(request, products)
+    page = _paginate(
+        request, products, "perfumes" if fixed_kind == Product.KIND_BULK else "products"
+    )
 
     context = {
         "form": form,
@@ -160,6 +166,112 @@ def perfumes(request):
     return _product_workspace(
         request, template="inventory/perfumes.html", fixed_kind=Product.KIND_BULK
     )
+
+
+@perm_required(PRODUCTS_MANAGE)
+def categories(request):
+    """Create, edit and retire product categories from the interface."""
+    editing = None
+    if request.GET.get("edit"):
+        editing = get_object_or_404(Category, pk=request.GET["edit"])
+    form = CategoryForm(instance=editing)
+    if request.method == "POST":
+        if request.POST.get("action") == "delete":
+            category = get_object_or_404(Category, pk=request.POST.get("id"))
+            if category.products.exists():
+                message = (
+                    "This category is used by products and cannot be deleted. "
+                    "Deactivate it instead."
+                )
+                if is_ajax(request):
+                    return json_error(message)
+                messages.error(request, message)
+                return redirect(request.path)
+            name = category.name
+            category.delete()
+            log_action(action="Category deleted", user=request.user, detail={"name": name}, request=request)
+            if is_ajax(request):
+                return json_ok("Category deleted.", refresh_list=True)
+            messages.success(request, "Category deleted.")
+            return redirect(request.path)
+        instance = None
+        if request.POST.get("id"):
+            instance = get_object_or_404(Category, pk=request.POST["id"])
+        form = CategoryForm(request.POST, instance=instance)
+        if form.is_valid():
+            category = form.save()
+            log_action(action="Category saved", user=request.user, target=category, request=request)
+            if is_ajax(request):
+                return json_ok("Category saved.", refresh_list=True)
+            messages.success(request, "Category saved.")
+            return redirect(request.path)
+        if is_ajax(request):
+            return json_error(errors=form_errors(form))
+    context = {
+        "form": form,
+        "editing": editing,
+        "categories": Category.objects.all(),
+        "list_url": request.path,
+    }
+    fragment = wants_fragment(request)
+    if fragment == "list":
+        return render(request, "inventory/_category_list.html", context)
+    if fragment == "form":
+        return render(request, "inventory/_category_form.html", context)
+    return render(request, "inventory/categories.html", context)
+
+
+@perm_required(PRODUCTS_MANAGE)
+def units(request):
+    """Create, edit and retire the units used by the product catalogue."""
+    editing = None
+    if request.GET.get("edit"):
+        editing = get_object_or_404(Unit, pk=request.GET["edit"])
+    form = UnitForm(instance=editing)
+    if request.method == "POST":
+        if request.POST.get("action") == "delete":
+            unit = get_object_or_404(Unit, pk=request.POST.get("id"))
+            if Product.objects.filter(unit=unit.code).exists():
+                message = (
+                    "This unit is used by products and cannot be deleted. "
+                    "Deactivate it instead."
+                )
+                if is_ajax(request):
+                    return json_error(message)
+                messages.error(request, message)
+                return redirect(request.path)
+            name = unit.name
+            unit.delete()
+            log_action(action="Unit deleted", user=request.user, detail={"name": name}, request=request)
+            if is_ajax(request):
+                return json_ok("Unit deleted.", refresh_list=True)
+            messages.success(request, "Unit deleted.")
+            return redirect(request.path)
+        instance = None
+        if request.POST.get("id"):
+            instance = get_object_or_404(Unit, pk=request.POST["id"])
+        form = UnitForm(request.POST, instance=instance)
+        if form.is_valid():
+            unit = form.save()
+            log_action(action="Unit saved", user=request.user, target=unit, request=request)
+            if is_ajax(request):
+                return json_ok("Unit saved.", refresh_list=True)
+            messages.success(request, "Unit saved.")
+            return redirect(request.path)
+        if is_ajax(request):
+            return json_error(errors=form_errors(form))
+    context = {
+        "form": form,
+        "editing": editing,
+        "units": Unit.objects.all(),
+        "list_url": request.path,
+    }
+    fragment = wants_fragment(request)
+    if fragment == "list":
+        return render(request, "inventory/_unit_list.html", context)
+    if fragment == "form":
+        return render(request, "inventory/_unit_form.html", context)
+    return render(request, "inventory/units.html", context)
 
 
 @perm_required(PRODUCTS_MANAGE)
@@ -244,7 +356,7 @@ def stock_overview(request):
     if kind:
         products = products.filter(kind=kind)
     products = products.order_by("name")
-    page = _paginate(request, products, per_page=30)
+    page = _paginate(request, products, "stock")
     rows = list(page)
     context = {
         "page": page,
@@ -464,10 +576,22 @@ def suppliers(request):
         if is_ajax(request):
             return json_error(errors=form_errors(form))
     supplier_list = Supplier.objects.all()
+    query = request.GET.get("q", "").strip()
+    status = request.GET.get("status", "").strip()
+    if query:
+        supplier_list = supplier_list.filter(
+            Q(name__icontains=query)
+            | Q(contact_person__icontains=query)
+            | Q(phone__icontains=query)
+            | Q(email__icontains=query)
+        )
+    if status == "inactive":
+        supplier_list = supplier_list.filter(is_active=False)
     context = {
         "form": form,
         "editing": editing,
         "suppliers": supplier_list,
+        "filters": {"q": query, "status": status},
         "list_url": request.path,
     }
     fragment = wants_fragment(request)
@@ -561,6 +685,12 @@ def receive(request):
                     request=request,
                 )
                 if is_ajax(request):
+                    if request.POST.get("drawer") == "1":
+                        return json_ok(
+                            f"Stock received on {purchase.number}.",
+                            drawer_close=True,
+                            refresh=True,
+                        )
                     return json_ok(
                         f"Stock received on {purchase.number}.",
                         redirect=request.path,
@@ -582,6 +712,8 @@ def receive(request):
         "list_url": request.path,
         "today": timezone.localdate(),
     }
+    if request.GET.get("drawer") == "1":
+        return render(request, "inventory/_receive_drawer.html", context)
     return render(request, "inventory/receive.html", context)
 
 
@@ -610,11 +742,16 @@ def purchases(request):
             queryset = queryset.filter(purchase_date__lte=datetime.strptime(end, "%Y-%m-%d").date())
         except ValueError:
             pass
-    page = _paginate(request, queryset)
+    page = _paginate(request, queryset, "purchases")
     total = sum((purchase.total_cost for purchase in page), Decimal("0"))
+    template = (
+        "inventory/_purchases_list.html"
+        if wants_fragment(request) == "list"
+        else "inventory/purchases.html"
+    )
     return render(
         request,
-        "inventory/purchases.html",
+        template,
         {
             "page": page,
             "purchases": page,

@@ -1,0 +1,23 @@
+{% load ui %}
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>When</th><th>Action</th><th>User</th><th>Target</th><th>Detail</th><th>IP</th></tr></thead>
+      <tbody>
+        {% for entry in entries %}
+          <tr>
+            <td class="whitespace-nowrap text-slate-500">{{ entry.created_at|date:"j M Y H:i" }}</td>
+            <td class="font-medium text-slate-800">{{ entry.action }}</td>
+            <td>{{ entry.user.username|default:"system" }}</td>
+            <td class="text-slate-500">{{ entry.target_type|default:"—" }}{% if entry.target_id %} #{{ entry.target_id }}{% endif %}</td>
+            <td class="max-w-xs truncate text-xs text-slate-500" title="{{ entry.detail }}">{{ entry.detail }}</td>
+            <td class="text-xs text-slate-400">{{ entry.ip_address|default:"—" }}</td>
+          </tr>
+        {% empty %}
+          {% include "partials/table_empty.html" with colspan=6 icon="search" title="No audit entries found" message="Sensitive actions are recorded automatically. Try a wider date range." %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+</div>

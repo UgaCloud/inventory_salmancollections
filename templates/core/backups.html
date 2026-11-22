@@ -74,7 +74,7 @@
           </details>
         </div>
       {% empty %}
-        <div class="px-4 py-10 text-center text-sm text-slate-500">No backups have been created yet.</div>
+        {% include "partials/empty_state.html" with icon="folder" title="No backups yet" message="Create your first backup so the shop can be restored if something goes wrong." %}
       {% endfor %}
     </div>
   </div>

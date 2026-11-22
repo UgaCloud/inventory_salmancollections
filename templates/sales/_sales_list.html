@@ -1,0 +1,28 @@
+{% load ui %}
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>Receipt</th><th>Date</th><th>Customer</th><th>Cashier</th><th class="num">Total</th><th class="num">Paid</th><th class="num">Balance</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for sale in sales %}
+          <tr>
+            <td><a href="{% url 'sales:detail' sale.pk %}" data-nav class="font-semibold text-brand-600 hover:underline">{{ sale.number }}</a></td>
+            <td class="whitespace-nowrap text-xs text-slate-500">{{ sale.created_at|date:"j M Y H:i" }}</td>
+            <td>{{ sale.customer.name|default:"Walk-in" }}</td>
+            <td class="text-xs text-slate-500">{{ sale.cashier.username|default:"—" }}</td>
+            <td class="num">{{ sale.total|money:currency_symbol }}</td>
+            <td class="num">{{ sale.paid|money:currency_symbol }}</td>
+            <td class="num {% if sale.balance %}text-rose-600{% endif %}">{{ sale.balance|money:currency_symbol }}</td>
+            <td>{% if sale.status == "completed" %}<span class="badge badge-green">Completed</span>{% else %}<span class="badge badge-red">Cancelled</span>{% endif %}</td>
+            <td class="whitespace-nowrap text-right">
+              <a href="{% url 'sales:receipt' sale.pk %}" data-receipt class="btn btn-secondary btn-sm">Receipt</a>
+            </td>
+          </tr>
+        {% empty %}
+          {% include "partials/table_empty.html" with colspan=9 icon="receipt" title="No sales found" message="Sales recorded in the point of sale appear here with their receipts and balances." action_url="/pos/" action_label="Open point of sale" %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+</div>

@@ -7,10 +7,10 @@
   <p class="page-subtitle">Sensitive activities recorded automatically, newest first.</p>
 </div>
 
-<form method="get" class="card mb-4 flex flex-wrap items-end gap-2 p-3">
+<form method="get" action="{% url 'core:audit' %}" data-filter-form data-list-url="{% url 'core:audit' %}" class="card mb-4 flex flex-wrap items-end gap-2 p-3">
   <div class="min-w-[12rem] flex-1">
     <label for="audit-q" class="label">Search</label>
-    <input type="search" id="audit-q" name="q" value="{{ q }}" placeholder="Action, user or detail">
+    <input type="search" id="audit-q" name="q" value="{{ q }}" placeholder="Action, user or detail" autocomplete="off">
   </div>
   <div class="w-48">
     <label for="audit-action" class="label">Action</label>
@@ -25,30 +25,10 @@
     <label for="audit-date" class="label">Date</label>
     <input type="date" id="audit-date" name="date" value="{{ day }}">
   </div>
-  <button type="submit" class="btn btn-secondary">Filter</button>
   <a href="{% url 'core:audit' %}" data-nav class="btn btn-ghost">Reset</a>
 </form>
 
-<div class="card overflow-hidden">
-  <div class="overflow-x-auto">
-    <table class="table">
-      <thead><tr><th>When</th><th>Action</th><th>User</th><th>Target</th><th>Detail</th><th>IP</th></tr></thead>
-      <tbody>
-        {% for entry in entries %}
-          <tr>
-            <td class="whitespace-nowrap text-slate-500">{{ entry.created_at|date:"j M Y H:i" }}</td>
-            <td class="font-medium text-slate-800">{{ entry.action }}</td>
-            <td>{{ entry.user.username|default:"system" }}</td>
-            <td class="text-slate-500">{{ entry.target_type|default:"—" }}{% if entry.target_id %} #{{ entry.target_id }}{% endif %}</td>
-            <td class="max-w-xs truncate text-xs text-slate-500" title="{{ entry.detail }}">{{ entry.detail }}</td>
-            <td class="text-xs text-slate-400">{{ entry.ip_address|default:"—" }}</td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="6" class="py-10 text-center text-sm text-slate-500">No audit entries match these filters.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% include "partials/pagination.html" %}
+<div data-list-container data-list-url="{% url 'core:audit' %}">
+  {% include "core/_audit_list.html" %}
 </div>
 {% endblock %}

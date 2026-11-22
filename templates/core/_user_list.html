@@ -14,14 +14,22 @@
               <p class="font-medium text-slate-800">{{ profile.user.get_full_name|default:profile.user.username }}</p>
               <p class="text-xs text-slate-500">@{{ profile.user.username }}{% if profile.phone %} · {{ profile.phone }}{% endif %}</p>
             </td>
-            <td>{% if profile.role %}<span class="badge badge-indigo">{{ profile.role.name }}</span>{% else %}<span class="badge badge-amber">No role</span>{% endif %}</td>
+            <td>
+              <label class="sr-only" for="role-{{ profile.pk }}">Role for {{ profile.user.username }}</label>
+              <select id="role-{{ profile.pk }}" class="w-48" data-user-role data-url="{% url 'core:user_role' profile.pk %}">
+                <option value="">No role</option>
+                {% for role in roles %}
+                  <option value="{{ role.pk }}" {% if profile.role_id == role.pk %}selected{% endif %}>{{ role.name }}</option>
+                {% endfor %}
+              </select>
+            </td>
             <td>{% if profile.is_active %}<span class="badge badge-green">Active</span>{% else %}<span class="badge badge-slate">Inactive</span>{% endif %}</td>
             <td class="text-right">
               <button type="button" class="btn btn-secondary btn-sm" data-form-open="{{ list_url }}?edit={{ profile.pk }}">Edit</button>
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="4" class="py-8 text-center text-sm text-slate-500">No staff accounts yet.</td></tr>
+          {% include "partials/table_empty.html" with colspan=4 icon="users" title="No staff accounts yet" message="Create an account and assign a role so the right dashboard and permissions apply." action_url=list_url action_label="Add a user" %}
         {% endfor %}
       </tbody>
     </table>

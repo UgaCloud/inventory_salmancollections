@@ -54,7 +54,7 @@
             {% for cell in row %}<td class="{% if forloop.counter0 > 0 %}num{% endif %}">{{ cell|cellformat }}</td>{% endfor %}
           </tr>
         {% empty %}
-          <tr><td colspan="{{ report.columns|length }}" class="py-10 text-center text-sm text-slate-500">No data for this period.</td></tr>
+          {% include "partials/table_empty.html" with colspan=report.columns|length icon="chart" title="No data for this period" message="Choose a wider date range or record activity to see this report." %}
         {% endfor %}
       </tbody>
     </table>

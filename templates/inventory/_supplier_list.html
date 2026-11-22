@@ -1,4 +1,12 @@
 <div class="card overflow-hidden">
+  <form method="get" action="{{ list_url }}" data-filter-form data-list-url="{{ list_url }}" class="flex flex-wrap items-center gap-2 border-b border-slate-100 p-3">
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Search name, contact, phone or email" class="min-w-[11rem] flex-1">
+    <select name="status" class="w-40" aria-label="Supplier status">
+      <option value="">All suppliers</option>
+      <option value="inactive" {% if filters.status == "inactive" %}selected{% endif %}>Inactive only</option>
+    </select>
+    <a href="{{ list_url }}" data-nav class="btn btn-ghost">Reset</a>
+  </form>
   <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
     <h2 class="section-title">Supplier records</h2>
     <span class="badge badge-slate">{{ suppliers|length }} supplier{{ suppliers|length|pluralize }}</span>
@@ -25,7 +33,7 @@
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="5" class="py-10 text-center text-sm text-slate-500">No suppliers yet.</td></tr>
+          {% include "partials/table_empty.html" with colspan=5 icon="truck" title="No suppliers found" message="Suppliers are who you buy stock from. Add the first one to start receiving stock." action_url=list_url action_label="Add a supplier" %}
         {% endfor %}
       </tbody>
     </table>

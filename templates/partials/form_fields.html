@@ -1,3 +1,4 @@
+{% load ui %}
 {% if form.non_field_errors %}
   <div class="form-errors" data-form-errors>
     {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
@@ -7,18 +8,20 @@
 {% endif %}
 <div class="form-grid">
   {% for field in form.visible_fields %}
-    <div class="{% if field.field.widget.input_type == 'textarea' or field.field.widget.input_type == 'file' or field.field.widget.input_type == 'checkbox' %}form-grid-wide{% endif %}" data-field="{{ field.name }}">
-      <label for="{{ field.id_for_label }}" class="label">
-        {{ field.label }}{% if field.field.required %} <span class="text-rose-500" aria-hidden="true">*</span>{% endif %}
-      </label>
-      {% if field.field.widget.input_type == "checkbox" %}
-        <label class="flex items-center gap-2 text-sm text-slate-700">{{ field }} <span>{{ field.help_text|default:"Enabled" }}</span></label>
-      {% else %}
-        {{ field }}
-        {% if field.help_text %}<p class="help">{{ field.help_text }}</p>{% endif %}
-      {% endif %}
-      {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-    </div>
+    {% if field.field.required %}{% include "partials/form_field.html" %}{% endif %}
   {% endfor %}
 </div>
+{% with optional=form|optional_fields %}
+  {% if optional %}
+    <button type="button" class="form-more-toggle" data-form-more aria-expanded="{% if form.errors %}true{% else %}false{% endif %}" aria-controls="{{ form.prefix }}-optional-fields">
+      <span data-form-more-label>{% if form.errors %}Show less{% else %}Add more info{% endif %}</span>
+      <span class="form-more-chevron" aria-hidden="true">⌄</span>
+    </button>
+    <div class="form-more" id="{{ form.prefix }}-optional-fields" data-form-more-body {% if not form.errors %}hidden{% endif %}>
+      <div class="form-grid">
+        {% for field in optional %}{% include "partials/form_field.html" %}{% endfor %}
+      </div>
+    </div>
+  {% endif %}
+{% endwith %}
 {% for field in form.hidden_fields %}{{ field }}{% endfor %}

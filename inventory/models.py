@@ -16,9 +16,35 @@ def product_image_path(instance, filename):
     return f"products/{uuid.uuid4().hex}{ext}"
 
 
+class Unit(models.Model):
+    """A unit of measure managed from the interface and used by products."""
+
+    name = models.CharField(max_length=40, unique=True)
+    code = models.CharField(
+        max_length=10,
+        unique=True,
+        help_text="Short code stored on products, for example ml, pcs or kg.",
+    )
+    is_active = models.BooleanField(default=True)
+    is_system = models.BooleanField(
+        default=False, help_text="Built-in unit required by the perfume workflow."
+    )
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+    @property
+    def product_count(self):
+        return Product.objects.filter(unit=self.code).count()
+
+
 class Category(models.Model):
     name = models.CharField(max_length=80, unique=True)
     description = models.CharField(max_length=200, blank=True)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ["name"]
@@ -26,6 +52,10 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def product_count(self):
+        return self.products.count()
 
 
 class Supplier(models.Model):

@@ -17,7 +17,7 @@
   {% csrf_token %}
   {% if editing %}<input type="hidden" name="id" value="{{ editing.pk }}">{% endif %}
   {% include "partials/form_fields.html" %}
-  <button type="submit" class="btn btn-primary btn-block">Save product</button>
+  {% include "partials/form_actions.html" with submit_label="Save product" cancel_label="product form" %}
 </form>
 
 {% if editing %}

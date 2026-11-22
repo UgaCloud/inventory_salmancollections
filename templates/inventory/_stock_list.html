@@ -19,7 +19,6 @@
       <option value="low" {% if filters.status == "low" %}selected{% endif %}>Low stock</option>
       <option value="out" {% if filters.status == "out" %}selected{% endif %}>Out of stock</option>
     </select>
-    <button type="submit" class="btn btn-secondary">Filter</button>
   </form>
   <div class="overflow-x-auto">
     <table class="table">
@@ -45,7 +44,7 @@
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="7" class="py-10 text-center text-sm text-slate-500">No products match this filter.</td></tr>
+          {% include "partials/table_empty.html" with colspan=7 icon="box" title="No stock matches this filter" message="Try another status or category, or receive stock for the products you sell." action_url=list_url action_label="Clear filters" %}
         {% endfor %}
       </tbody>
     </table>

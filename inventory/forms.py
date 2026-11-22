@@ -5,13 +5,46 @@ from django import forms
 from core.forms import StyledForm, StyledModelForm
 from core.models import ShopSettings
 
-from .models import Category, Product, Supplier
+from .models import Category, Product, Supplier, Unit
+
+
+class UnitForm(StyledModelForm):
+    class Meta:
+        model = Unit
+        fields = ["name", "code", "is_active"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["code"].help_text = (
+            "Short code stored on products (max 10 characters, no spaces). "
+            "It cannot be changed while products use this unit."
+        )
+
+    def clean_code(self):
+        code = (self.cleaned_data.get("code") or "").strip().lower()
+        if not code:
+            raise forms.ValidationError("Enter the short code for this unit.")
+        if " " in code:
+            raise forms.ValidationError("The code cannot contain spaces.")
+        if self.instance and self.instance.pk and self.instance.code != code:
+            if Product.objects.filter(unit=self.instance.code).exists():
+                raise forms.ValidationError(
+                    "This unit is used by existing products, so its code cannot change. "
+                    "Create a new unit instead."
+                )
+        return code
+
+    def clean_name(self):
+        return (self.cleaned_data.get("name") or "").strip()
 
 
 class CategoryForm(StyledModelForm):
     class Meta:
         model = Category
-        fields = ["name", "description"]
+        fields = ["name", "description", "is_active"]
+
+    def clean_name(self):
+        return (self.cleaned_data.get("name") or "").strip()
 
 
 class SupplierForm(StyledModelForm):
@@ -74,7 +107,18 @@ class ProductForm(StyledModelForm):
             kind=Product.KIND_BULK, is_active=True
         ).order_by("name")
         self.fields["bulk_parent"].help_text = "Packed bottles only: the bulk perfume it belongs to."
-        self.fields["category"].queryset = Category.objects.all()
+        self.fields["category"].queryset = Category.objects.filter(is_active=True)
+        current_unit = self.instance.unit if self.instance and self.instance.pk else None
+        units = Unit.objects.filter(is_active=True)
+        if current_unit:
+            units = Unit.objects.filter(code=current_unit) | units
+        self.fields["unit"].choices = [
+            (unit.code, f"{unit.name} ({unit.code})") for unit in units.distinct().order_by("name")
+        ] or list(Product.UNIT_CHOICES)
+        if current_unit and self.instance.category_id:
+            self.fields["category"].queryset = Category.objects.filter(is_active=True) | Category.objects.filter(
+                pk=self.instance.category_id
+            )
         if self.instance and self.instance.pk:
             self.fields["preset_sizes_text"].initial = "\n".join(
                 f"{item.get('ml')}:{item.get('price')}"

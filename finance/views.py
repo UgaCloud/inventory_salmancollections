@@ -10,6 +10,7 @@ from django.utils import timezone
 from core.audit import log_action
 from core.decorators import perm_required
 from core.http import form_errors, is_ajax, json_error, json_ok
+from core.pagination import page_size_for
 from core.permissions import FINANCE_MANAGE
 
 from .forms import ExpenseForm, ReconcileForm
@@ -17,8 +18,8 @@ from .models import CashReconciliation, Expense, ExpenseCategory
 from .services import expected_cash
 
 
-def _paginate(request, queryset, per_page=20):
-    return Paginator(queryset, per_page).get_page(request.GET.get("page"))
+def _paginate(request, queryset, section="default"):
+    return Paginator(queryset, page_size_for(section)).get_page(request.GET.get("page"))
 
 
 @perm_required(FINANCE_MANAGE)
@@ -75,7 +76,7 @@ def expenses(request):
                 queryset = queryset.filter(**{lookup: datetime.strptime(raw, "%Y-%m-%d").date()})
             except ValueError:
                 pass
-    page = _paginate(request, queryset)
+    page = _paginate(request, queryset, "expenses")
     total = queryset.aggregate(total=Sum("amount"))["total"] or Decimal("0")
     context = {
         "form": form,

@@ -55,6 +55,12 @@ def json_script_value(value):
 
 
 @register.filter
+def optional_fields(form):
+    """Visible fields the user may leave empty, shown behind "Add more info"."""
+    return [field for field in form.visible_fields() if not field.field.required]
+
+
+@register.filter
 def get_item(mapping, key):
     if hasattr(mapping, "get"):
         return mapping.get(key)

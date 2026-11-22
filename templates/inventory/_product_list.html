@@ -22,7 +22,6 @@
       <option value="out" {% if filters.status == "out" %}selected{% endif %}>Out of stock</option>
       <option value="inactive" {% if filters.status == "inactive" %}selected{% endif %}>Inactive</option>
     </select>
-    <button type="submit" class="btn btn-secondary">Filter</button>
   </form>
   <div class="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
     <h2 class="section-title">{% if perfume_mode %}Perfumes{% else %}Product catalogue{% endif %}</h2>
@@ -84,7 +83,7 @@
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="6" class="py-10 text-center text-sm text-slate-500">No products match this view. Add a product using the form.</td></tr>
+          {% include "partials/table_empty.html" with colspan=6 icon="box" title="No products found" message="Add your first product, or clear the filters to see the rest of the catalogue." action_url=list_url action_label="Add a product" %}
         {% endfor %}
       </tbody>
     </table>

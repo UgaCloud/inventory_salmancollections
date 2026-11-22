@@ -1,0 +1,6 @@
+{% comment %}Empty table body row with a designed empty state. Pass colspan and empty-state fields.{% endcomment %}
+<tr>
+  <td colspan="{{ colspan|default:6 }}" class="table-empty-cell">
+    {% include "partials/empty_state.html" %}
+  </td>
+</tr>

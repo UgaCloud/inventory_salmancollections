@@ -2,6 +2,7 @@ import os
 import uuid
 
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
@@ -31,6 +32,60 @@ class ShopSettings(models.Model):
     low_stock_threshold = models.DecimalField(max_digits=12, decimal_places=3, default=5)
     auto_backup_enabled = models.BooleanField(default=False)
     backup_retention = models.PositiveIntegerField(default=10)
+
+    # List pagination. Each table has its own size and falls back to the
+    # default when left empty, so staff can tune one screen without touching
+    # every other list.
+    page_size_default = models.PositiveSmallIntegerField(
+        "Default rows per page",
+        default=10,
+        validators=[MinValueValidator(5), MaxValueValidator(100)],
+    )
+    page_size_products = models.PositiveSmallIntegerField(
+        "Products & perfumes",
+        default=10,
+        validators=[MinValueValidator(5), MaxValueValidator(100)],
+    )
+    page_size_stock = models.PositiveSmallIntegerField(
+        "Stock overview",
+        default=10,
+        validators=[MinValueValidator(5), MaxValueValidator(100)],
+    )
+    page_size_purchases = models.PositiveSmallIntegerField(
+        "Purchases & receiving",
+        default=10,
+        validators=[MinValueValidator(5), MaxValueValidator(100)],
+    )
+    page_size_sales = models.PositiveSmallIntegerField(
+        "Sales & receipts",
+        default=10,
+        validators=[MinValueValidator(5), MaxValueValidator(100)],
+    )
+    page_size_customers = models.PositiveSmallIntegerField(
+        "Customers",
+        default=10,
+        validators=[MinValueValidator(5), MaxValueValidator(100)],
+    )
+    page_size_payments = models.PositiveSmallIntegerField(
+        "Customer payments",
+        default=10,
+        validators=[MinValueValidator(5), MaxValueValidator(100)],
+    )
+    page_size_expenses = models.PositiveSmallIntegerField(
+        "Expenses",
+        default=10,
+        validators=[MinValueValidator(5), MaxValueValidator(100)],
+    )
+    page_size_audit = models.PositiveSmallIntegerField(
+        "Audit log",
+        default=10,
+        validators=[MinValueValidator(5), MaxValueValidator(100)],
+    )
+    page_size_pos = models.PositiveSmallIntegerField(
+        "Point of sale catalogue",
+        default=12,
+        validators=[MinValueValidator(4), MaxValueValidator(60)],
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -51,9 +106,23 @@ class ShopSettings(models.Model):
 
 
 class Role(models.Model):
+    DASHBOARD_CHOICES = [
+        ("owner", "Owner / Administrator"),
+        ("manager", "Manager"),
+        ("cashier", "Cashier"),
+        ("storekeeper", "Storekeeper"),
+        ("accountant", "Accountant"),
+    ]
+
     name = models.CharField(max_length=60, unique=True)
     slug = models.SlugField(max_length=60, unique=True)
     permissions = models.JSONField(default=list, blank=True)
+    dashboard = models.CharField(
+        max_length=20,
+        choices=DASHBOARD_CHOICES,
+        blank=True,
+        help_text="Leave empty to pick the dashboard that matches the role slug.",
+    )
     is_system = models.BooleanField(default=True)
 
     class Meta:

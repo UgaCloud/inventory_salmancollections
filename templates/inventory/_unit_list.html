@@ -1,0 +1,30 @@
+{% load ui %}
+<div class="card overflow-hidden">
+  <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+    <h2 class="section-title">Units</h2>
+    <span class="badge badge-slate">{{ units|length }} unit{{ units|length|pluralize }}</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead><tr><th>Unit</th><th>Code</th><th class="num">Products</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for unit in units %}
+          <tr>
+            <td class="font-medium">{{ unit.name }}{% if unit.is_system %} <span class="badge badge-indigo">Required</span>{% endif %}</td>
+            <td><code class="rounded bg-slate-100 px-1.5 py-0.5 text-xs">{{ unit.code }}</code></td>
+            <td class="num">{{ unit.product_count }}</td>
+            <td>{% if unit.is_active %}<span class="badge badge-green">Active</span>{% else %}<span class="badge badge-slate">Inactive</span>{% endif %}</td>
+            <td class="whitespace-nowrap text-right">
+              <button type="button" class="btn btn-secondary btn-sm" data-form-open="{{ list_url }}?edit={{ unit.pk }}">Edit</button>
+              {% if not unit.product_count and not unit.is_system %}
+                <button type="button" class="btn btn-ghost btn-sm text-rose-600" data-delete data-id="{{ unit.pk }}" data-url="{{ list_url }}" data-delete-label="this unit">Delete</button>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          {% include "partials/table_empty.html" with colspan=5 icon="tag" title="No units yet" message="Add the units your products are counted in, such as pieces, millilitres or kilograms." action_url=list_url action_label="Add a unit" %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,11 @@
+{% comment %}
+Consistent submit/cancel footer. Cancel never saves: inside the workspace
+panel it closes the panel, elsewhere it returns to cancel_url (or the list).
+{% endcomment %}
+<div class="form-actions">
+  <button type="submit" class="btn btn-primary">{{ submit_label|default:"Save" }}</button>
+  <button type="button" class="btn btn-secondary"
+          data-form-cancel
+          data-cancel-url="{% if cancel_url %}{{ cancel_url }}{% elif list_url %}{{ list_url }}{% endif %}"
+          data-cancel-label="{{ cancel_label|default:'this form' }}">Cancel</button>
+</div>

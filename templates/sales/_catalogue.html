@@ -40,3 +40,16 @@
     No products match this search.
   </div>
 {% endfor %}
+{% if page.paginator.num_pages > 1 %}
+  <nav class="col-span-full mt-1 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500" aria-label="Catalogue pagination">
+    <span>Page {{ page.number }} of {{ page.paginator.num_pages }} · {{ page.paginator.count }} products</span>
+    <div class="flex items-center gap-1">
+      {% if page.has_previous %}
+        <button type="button" class="btn btn-secondary btn-sm" data-catalogue-page="{{ page.previous_page_number }}">Previous</button>
+      {% endif %}
+      {% if page.has_next %}
+        <button type="button" class="btn btn-secondary btn-sm" data-catalogue-page="{{ page.next_page_number }}">Next</button>
+      {% endif %}
+    </div>
+  </nav>
+{% endif %}

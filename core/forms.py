@@ -71,6 +71,31 @@ class BusinessSettingsForm(StyledModelForm):
         }
 
 
+class PaginationForm(StyledModelForm):
+    class Meta:
+        model = ShopSettings
+        fields = [
+            "page_size_default",
+            "page_size_products",
+            "page_size_stock",
+            "page_size_purchases",
+            "page_size_sales",
+            "page_size_customers",
+            "page_size_payments",
+            "page_size_expenses",
+            "page_size_audit",
+            "page_size_pos",
+        ]
+        help_texts = {
+            "page_size_default": "Used by any table that has no size of its own.",
+            "page_size_products": "Rows per page in the product and perfume workspaces.",
+            "page_size_pos": "Product cards shown per page in the point of sale catalogue.",
+        }
+
+    def clean_page_size_default(self):
+        return max(5, min(100, self.cleaned_data["page_size_default"]))
+
+
 class PaymentMethodForm(StyledModelForm):
     class Meta:
         model = PaymentMethod
@@ -157,10 +182,25 @@ class RoleForm(StyledModelForm):
 
     class Meta:
         model = Role
-        fields = ["name", "permissions"]
+        fields = ["name", "dashboard", "permissions"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["dashboard"].required = False
+        self.fields["dashboard"].empty_label = "Automatic (match the role)"
+        self.fields["dashboard"].help_text = (
+            "Which dashboard this role sees. Dashboard assignment is separate from "
+            "module permissions and never grants access to restricted data."
+        )
         if self.instance and self.instance.pk:
             self.fields["permissions"].initial = self.instance.permissions or []
         self.grouped_permissions = PERMISSION_GROUPS
+
+    def clean_name(self):
+        name = self.cleaned_data["name"].strip()
+        qs = Role.objects.filter(name__iexact=name)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError("A role with that name already exists.")
+        return name

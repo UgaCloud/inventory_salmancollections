@@ -1,10 +1,25 @@
 {% load static %}<!doctype html>
-<html lang="en" class="h-full">
+<html lang="en" class="h-full" data-theme="light">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="csrf-token" content="{{ csrf_token }}">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>{% block title %}{{ shop.name }}{% endblock %}</title>
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem("app-theme");
+        var theme = stored || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+      } catch (error) { /* default to light */ }
+    })();
+  </script>
+  <link rel="manifest" href="{% url 'core:manifest' %}">
+  <link rel="icon" href="{% static 'img/icon-192.png' %}" sizes="192x192">
+  <link rel="apple-touch-icon" href="{% static 'img/icon-192.png' %}">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -21,17 +36,33 @@
       }
     };
   </script>
-  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=5">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=6">
+  <link rel="stylesheet" href="{% static 'css/ui.css' %}?v=10">
   <script>
     window.APP_CONFIG = {
       currency: "{{ shop.currency_symbol|escapejs }}",
       catalogueUrl: "{% url 'sales:catalogue' %}",
-      checkoutUrl: "{% url 'sales:checkout' %}"
+      checkoutUrl: "{% url 'sales:checkout' %}",
+      offlineUrl: "{% url 'core:offline' %}"
     };
   </script>
   {% block extra_head %}{% endblock %}
 </head>
-<body class="min-h-full bg-slate-50 text-slate-800 antialiased">
+<body class="app-body min-h-full antialiased">
+  <div id="app-loader" class="app-loader" role="status" aria-live="polite" aria-label="Loading">
+    <div class="app-loader-stage">
+      {% if shop.logo %}
+        <img src="{{ shop.logo.url }}" alt="{{ shop.name }}" class="app-loader-logo">
+      {% else %}
+        <span class="app-loader-logo app-loader-monogram">{{ shop.name|slice:":1"|upper }}</span>
+      {% endif %}
+      <span class="app-loader-ring app-loader-ring-outer" aria-hidden="true"></span>
+      <span class="app-loader-ring app-loader-ring-inner" aria-hidden="true"></span>
+      <span class="app-loader-orbit" aria-hidden="true"><i></i><i></i><i></i></span>
+    </div>
+    <p class="app-loader-label">{{ shop.name }}</p>
+  </div>
+
   {% if user.is_authenticated %}{% include "partials/nav.html" %}{% endif %}
   <div id="toast-root" class="pointer-events-none fixed right-4 top-20 z-[70] flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2" aria-live="polite"></div>
   <div id="loading-bar" class="fixed left-0 top-0 z-[80] h-0.5 w-full bg-brand-600 opacity-0 transition-opacity duration-150"></div>
@@ -39,9 +70,42 @@
     {% include "partials/messages.html" %}
     {% block content %}{% endblock %}
   </main>
-  <script src="{% static 'js/app.js' %}?v=5"></script>
-  <script src="{% static 'js/pos.js' %}?v=5"></script>
-  <script src="{% static 'js/inventory.js' %}?v=5"></script>
+
+  <div id="app-drawer" class="app-drawer" data-drawer hidden aria-hidden="true">
+    <div class="app-drawer-backdrop" data-drawer-close></div>
+    <aside class="app-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="app-drawer-title">
+      <div class="app-drawer-head">
+        <h2 id="app-drawer-title" class="section-title" data-drawer-title>Details</h2>
+        <button type="button" class="app-drawer-close" data-drawer-close aria-label="Close panel">&times;</button>
+      </div>
+      <div class="app-drawer-body" data-drawer-body></div>
+    </aside>
+  </div>
+
+  <div id="receipt-modal" class="app-modal" hidden aria-hidden="true">
+    <div class="app-modal-backdrop" data-receipt-close></div>
+    <div class="app-modal-panel" role="dialog" aria-modal="true" aria-labelledby="receipt-modal-title">
+      <div class="app-modal-head">
+        <h2 id="receipt-modal-title" class="section-title" data-receipt-title>Receipt</h2>
+        <div class="flex items-center gap-2">
+          <button type="button" class="btn btn-primary btn-sm" data-receipt-print>Print</button>
+          <button type="button" class="app-drawer-close" data-receipt-close aria-label="Close receipt">&times;</button>
+        </div>
+      </div>
+      <div class="app-modal-body" data-receipt-body></div>
+    </div>
+  </div>
+
+  <div id="net-status" class="net-status" data-state="online" role="status" aria-live="polite">
+    <span class="net-dot" aria-hidden="true"></span>
+    <span data-net-label>Online</span>
+  </div>
+  <button type="button" id="pwa-install" class="btn btn-primary pwa-install" hidden>Install app</button>
+
+  <script src="{% static 'js/app.js' %}?v=13"></script>
+  <script src="{% static 'js/ui.js' %}?v=7"></script>
+  <script src="{% static 'js/pos.js' %}?v=7"></script>
+  <script src="{% static 'js/inventory.js' %}?v=7"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

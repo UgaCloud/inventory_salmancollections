@@ -1,0 +1,11 @@
+{% extends "core/workspace.html" %}
+{% block title %}Units of measure · {{ shop.name }}{% endblock %}
+{% block page_title %}Units of measure{% endblock %}
+{% block page_subtitle %}Units used by every product form. Existing products keep their unit until changed.{% endblock %}
+{% block page_actions %}
+  <a href="{% url 'inventory:products' %}" data-nav class="btn btn-secondary">Products</a>
+  <a href="{% url 'inventory:categories' %}" data-nav class="btn btn-secondary">Categories</a>
+{% endblock %}
+{% block form_toggle_label %}Add unit{% endblock %}
+{% block list %}{% include "inventory/_unit_list.html" %}{% endblock %}
+{% block form %}{% include "inventory/_unit_form.html" %}{% endblock %}

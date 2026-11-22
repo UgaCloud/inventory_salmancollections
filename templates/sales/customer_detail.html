@@ -51,7 +51,7 @@
                 <td>{% if sale.status == "completed" %}<span class="badge badge-green">Completed</span>{% else %}<span class="badge badge-red">Cancelled</span>{% endif %}</td>
               </tr>
             {% empty %}
-              <tr><td colspan="6" class="py-8 text-center text-sm text-slate-500">This customer has no purchases yet.</td></tr>
+              {% include "partials/table_empty.html" with colspan=6 icon="receipt" title="No purchases yet" message="Sales made for this customer will appear here with their balances." action_url="/pos/" action_label="Open point of sale" %}
             {% endfor %}
           </tbody>
         </table>
@@ -73,7 +73,7 @@
                 <td class="text-xs text-slate-500">{{ payment.user.username|default:"—" }}</td>
               </tr>
             {% empty %}
-              <tr><td colspan="5" class="py-8 text-center text-sm text-slate-500">No payments recorded for this customer.</td></tr>
+              {% include "partials/table_empty.html" with colspan=5 icon="wallet" title="No payments yet" message="Payments recorded against outstanding sales appear here." %}
             {% endfor %}
           </tbody>
         </table>
@@ -89,7 +89,8 @@
         <form method="post" action="{% url 'customers:record_payment' customer.pk %}" novalidate>
           {% csrf_token %}
           {% include "partials/form_fields.html" %}
-          <button type="submit" class="btn btn-primary btn-block" {% if not outstanding %}disabled{% endif %}>Record payment</button>
+          <button type="submit" class="btn btn-primary" {% if not outstanding %}disabled{% endif %}>Record payment</button>
+          <button type="button" class="btn btn-secondary" data-form-cancel data-cancel-url="{% url 'customers:detail' customer.pk %}" data-cancel-label="payment form">Cancel</button>
         </form>
       </div>
       {% if not outstanding %}<p class="mt-2 text-xs text-slate-500">This customer has nothing outstanding.</p>{% endif %}

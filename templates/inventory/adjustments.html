@@ -30,7 +30,7 @@
             <td class="text-xs text-slate-500">{{ adjustment.user.username|default:"—" }}</td>
           </tr>
         {% empty %}
-          <tr><td colspan="6" class="py-10 text-center text-sm text-slate-500">No stock adjustments have been recorded.</td></tr>
+          {% include "partials/table_empty.html" with colspan=6 icon="sliders" title="No adjustments yet" message="Stock corrections with a reason will appear here, newest first." %}
         {% endfor %}
       </tbody>
     </table>
@@ -44,7 +44,7 @@
   <form method="post" action="{{ list_url }}" data-ajax-form data-list-url="{{ list_url }}" novalidate>
     {% csrf_token %}
     {% include "partials/form_fields.html" %}
-    <button type="submit" class="btn btn-primary btn-block">Apply adjustment</button>
+    {% include "partials/form_actions.html" with submit_label="Apply adjustment" cancel_label="adjustment form" %}
   </form>
 </div>
 {% endblock %}
